@@ -10859,6 +10859,8 @@ function getWindowHeight() {
 // Imports from the Wasm binary.
 var _setCanvasSize = Module["_setCanvasSize"] = makeInvalidEarlyAccess("_setCanvasSize");
 
+var _toggleFullscreen = Module["_toggleFullscreen"] = makeInvalidEarlyAccess("_toggleFullscreen");
+
 var _disableInput = Module["_disableInput"] = makeInvalidEarlyAccess("_disableInput");
 
 var _free = makeInvalidEarlyAccess("_free");
@@ -11023,6 +11025,7 @@ var _asyncify_stop_rewind = makeInvalidEarlyAccess("_asyncify_stop_rewind");
 
 function assignWasmExports(wasmExports) {
   Module["_setCanvasSize"] = _setCanvasSize = createExportWrapper("setCanvasSize", 2);
+  Module["_toggleFullscreen"] = _toggleFullscreen = createExportWrapper("toggleFullscreen", 2);
   Module["_disableInput"] = _disableInput = createExportWrapper("disableInput", 1);
   _free = createExportWrapper("free", 1);
   Module["_zoomCamera"] = _zoomCamera = createExportWrapper("zoomCamera", 1);
