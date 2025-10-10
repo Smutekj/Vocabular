@@ -9669,6 +9669,11 @@ var _emscripten_set_keypress_callback_on_thread = (target, userData, useCapture,
 
 var _emscripten_set_keyup_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) => registerKeyEventCallback(target, userData, useCapture, callbackfunc, 3, "keyup", targetThread);
 
+var _emscripten_set_main_loop_arg = (func, arg, fps, simulateInfiniteLoop) => {
+  var iterFunc = () => (a1 => dynCall_vi(func, a1))(arg);
+  setMainLoop(iterFunc, fps, simulateInfiniteLoop, arg);
+};
+
 var fillMouseEventData = (eventStruct, e, target) => {
   assert(eventStruct % 4 == 0);
   HEAPF64[((eventStruct) >> 3)] = e.timeStamp;
@@ -10496,7 +10501,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  15413889: $0 => {
+  15413905: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10504,7 +10509,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  15414114: () => {
+  15414130: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10512,7 +10517,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15414261: () => {
+  15414277: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10520,7 +10525,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15414495: $0 => {
+  15414511: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10544,11 +10549,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  15415047: () => {
+  15415063: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  15415115: ($0, $1, $2, $3) => {
+  15415131: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10590,7 +10595,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  15416808: ($0, $1, $2, $3) => {
+  15416824: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -10622,7 +10627,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  15417983: ($0, $1) => {
+  15417999: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -10641,7 +10646,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15418588: ($0, $1) => {
+  15418604: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -10655,7 +10660,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15419077: $0 => {
+  15419093: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10689,7 +10694,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  15420083: ($0, $1, $2) => {
+  15420099: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -10760,7 +10765,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  15421551: ($0, $1, $2, $3, $4) => {
+  15421567: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -10797,18 +10802,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  15422539: $0 => {
+  15422555: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  15422622: () => {
+  15422638: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  15422691: () => window.innerWidth,
-  15422721: () => window.innerHeight
+  15422707: () => window.innerWidth,
+  15422737: () => window.innerHeight
 };
 
 function setupDeviceOrientation() {
@@ -11459,6 +11464,7 @@ var wasmImports = {
   /** @export */ emscripten_set_keydown_callback_on_thread: _emscripten_set_keydown_callback_on_thread,
   /** @export */ emscripten_set_keypress_callback_on_thread: _emscripten_set_keypress_callback_on_thread,
   /** @export */ emscripten_set_keyup_callback_on_thread: _emscripten_set_keyup_callback_on_thread,
+  /** @export */ emscripten_set_main_loop_arg: _emscripten_set_main_loop_arg,
   /** @export */ emscripten_set_mousedown_callback_on_thread: _emscripten_set_mousedown_callback_on_thread,
   /** @export */ emscripten_set_mouseenter_callback_on_thread: _emscripten_set_mouseenter_callback_on_thread,
   /** @export */ emscripten_set_mouseleave_callback_on_thread: _emscripten_set_mouseleave_callback_on_thread,
