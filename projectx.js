@@ -4650,7 +4650,6 @@ var Browser = {
       w = Math.round(w * factor);
       h = Math.round(h * factor);
     }
-    console.log("BROWSER UPDATED CANVAS DIMENSIONS!");
     if (Browser.resizeCanvas) {
       if (canvas.width != w) canvas.width = w;
       if (canvas.height != h) canvas.height = h;
@@ -6119,7 +6118,6 @@ var getCanvasElementSize = target => {
 var _emscripten_set_canvas_element_size = (target, width, height) => {
   var canvas = findCanvasEventTarget(target);
   if (!canvas) return -4;
-  console.log("CANVAS SIZE CHANGED FROM EMSCRIPTEN");
   canvas.width = width;
   canvas.height = height;
   if (canvas.GLctxObject) GL.resizeOffscreenFramebuffer(canvas.GLctxObject);
