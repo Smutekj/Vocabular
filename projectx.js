@@ -4650,6 +4650,7 @@ var Browser = {
       w = Math.round(w * factor);
       h = Math.round(h * factor);
     }
+    console.log("BROWSER UPDATED CANVAS DIMENSIONS!");
     if (Browser.resizeCanvas) {
       if (canvas.width != w) canvas.width = w;
       if (canvas.height != h) canvas.height = h;
