@@ -1,0 +1,16 @@
+{
+    "name": "Vocabulary learning game app",
+    "short_name": "Vocabular",
+    "description": "Vocabular is an app that will help you practice learning vocabulary by combining practice with simple games",
+    "icons": [
+      {
+        "src": "/public/vite.svg",
+        "sizes": "32x32",
+        "type": "image/svg"
+      }
+    ],
+    "start_url": "/index.html",
+    "display": "fullscreen",
+    "theme_color": "#B12A34",
+    "background_color": "#B12A34"
+  }
