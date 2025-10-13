@@ -384,8 +384,6 @@ var /** not-@type {!BigInt64Array} */ HEAP64, /* BigUint64Array type is not corr
 
 var runtimeInitialized = false;
 
-var runtimeExited = false;
-
 function updateMemoryViews() {
   var b = wasmMemory.buffer;
   HEAP8 = new Int8Array(b);
@@ -432,22 +430,6 @@ function initRuntime() {
 
 function preMain() {
   checkStackCookie();
-}
-
-function exitRuntime() {
-  assert(!runtimeExited);
-  // ASYNCIFY cannot be used once the runtime starts shutting down.
-  Asyncify.state = Asyncify.State.Disabled;
-  checkStackCookie();
-  // PThreads reuse the runtime from the main thread.
-  ___funcs_on_exit();
-  // Native atexit() functions
-  // Begin ATEXITS hooks
-  callRuntimeCallbacks(onExits);
-  FS.quit();
-  TTY.shutdown();
-  // End ATEXITS hooks
-  runtimeExited = true;
 }
 
 function postRun() {
@@ -566,7 +548,6 @@ function removeRunDependency(id) {
 function createExportWrapper(name, nargs) {
   return (...args) => {
     assert(runtimeInitialized, `native function \`${name}\` called before runtime initialization`);
-    assert(!runtimeExited, `native function \`${name}\` called after runtime exit (use NO_EXIT_RUNTIME to keep it alive after main() exits)`);
     var f = wasmExports[name];
     assert(f, `exported native function \`${name}\` not found`);
     // Only assert for too many arguments. Too few can be valid since the missing arguments will be zero filled.
@@ -759,7 +740,7 @@ var dynCall = (sig, ptr, args = [], promising = false) => {
   return convert(rtn);
 };
 
-var noExitRuntime = false;
+var noExitRuntime = true;
 
 var ptrToString = ptr => {
   assert(typeof ptr === "number");
@@ -4150,9 +4131,7 @@ var _proc_exit = code => {
 
 /** @suppress {duplicate } */ /** @param {boolean|number=} implicit */ var exitJS = (status, implicit) => {
   EXITSTATUS = status;
-  if (!keepRuntimeAlive()) {
-    exitRuntime();
-  }
+  checkUnflushedContent();
   // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
   if (keepRuntimeAlive() && !implicit) {
     var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
@@ -4164,9 +4143,6 @@ var _proc_exit = code => {
 var _exit = exitJS;
 
 var maybeExit = () => {
-  if (runtimeExited) {
-    return;
-  }
   if (!keepRuntimeAlive()) {
     try {
       _exit(EXITSTATUS);
@@ -4177,7 +4153,7 @@ var maybeExit = () => {
 };
 
 var callUserCallback = func => {
-  if (runtimeExited || ABORT) {
+  if (ABORT) {
     err("user callback triggered after runtime exited or application aborted.  Ignoring.");
     return;
   }
@@ -4189,22 +4165,9 @@ var callUserCallback = func => {
   }
 };
 
-var runtimeKeepalivePush = () => {
-  runtimeKeepaliveCounter += 1;
-};
-
-var runtimeKeepalivePop = () => {
-  assert(runtimeKeepaliveCounter > 0);
-  runtimeKeepaliveCounter -= 1;
-};
-
-/** @param {number=} timeout */ var safeSetTimeout = (func, timeout) => {
-  runtimeKeepalivePush();
-  return setTimeout(() => {
-    runtimeKeepalivePop();
-    callUserCallback(func);
-  }, timeout);
-};
+/** @param {number=} timeout */ var safeSetTimeout = (func, timeout) => setTimeout(() => {
+  callUserCallback(func);
+}, timeout);
 
 var Browser = {
   useWebGL: false,
@@ -5655,7 +5618,6 @@ var _eglSwapBuffers = (dpy, surface) => {
   var thisMainLoopId = MainLoop.currentlyRunningMainloop;
   function checkIsRunning() {
     if (thisMainLoopId < MainLoop.currentlyRunningMainloop) {
-      runtimeKeepalivePop();
       maybeExit();
       return false;
     }
@@ -5820,7 +5782,6 @@ var _emscripten_set_main_loop_timing = (mode, value) => {
     return 1;
   }
   if (!MainLoop.running) {
-    runtimeKeepalivePush();
     MainLoop.running = true;
   }
   if (mode == 0) {
@@ -5955,8 +5916,6 @@ var _emscripten_asm_const_ptr_sync_on_main_thread = (emAsmAddr, sigPtr, argbuf) 
 
 var onExits = [];
 
-var addOnExit = cb => onExits.push(cb);
-
 var JSEvents = {
   memcpy(target, src, size) {
     HEAP8.set(HEAP8.subarray(src, src + size), target);
@@ -5966,12 +5925,6 @@ var JSEvents = {
       JSEvents._removeHandler(JSEvents.eventHandlers.length - 1);
     }
     JSEvents.deferredCalls = [];
-  },
-  registerRemoveEventListeners() {
-    if (!JSEvents.removeEventListenersRegistered) {
-      addOnExit(JSEvents.removeAllEventListeners);
-      JSEvents.removeEventListenersRegistered = true;
-    }
   },
   inEventHandler: 0,
   deferredCalls: [],
@@ -6055,7 +6008,6 @@ var JSEvents = {
       };
       eventHandler.target.addEventListener(eventHandler.eventTypeString, eventHandler.eventListenerFunc, eventHandler.useCapture);
       JSEvents.eventHandlers.push(eventHandler);
-      JSEvents.registerRemoveEventListeners();
     } else {
       for (var i = 0; i < JSEvents.eventHandlers.length; ++i) {
         if (JSEvents.eventHandlers[i].target == eventHandler.target && JSEvents.eventHandlers[i].eventTypeString == eventHandler.eventTypeString) {
@@ -10218,7 +10170,6 @@ var Asyncify = {
       // the dbg() function itself can call back into WebAssembly to get the
       // current pthread_self() pointer).
       Asyncify.state = Asyncify.State.Normal;
-      runtimeKeepalivePush();
       // Keep the runtime alive so that a re-wind can be done later.
       runAndAbortIfError(_asyncify_stop_unwind);
       if (typeof Fibers != "undefined") {
@@ -10272,7 +10223,6 @@ var Asyncify = {
     assert(func);
     // Once we have rewound and the stack we no longer need to artificially
     // keep the runtime alive.
-    runtimeKeepalivePop();
     return func();
   },
   handleSleep(startAsync) {
@@ -10501,7 +10451,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  15413615: $0 => {
+  15415231: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10509,7 +10459,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  15413840: () => {
+  15415456: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10517,7 +10467,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15413987: () => {
+  15415603: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10525,7 +10475,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15414221: $0 => {
+  15415837: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10549,11 +10499,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  15414773: () => {
+  15416389: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  15414841: ($0, $1, $2, $3) => {
+  15416457: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10595,7 +10545,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  15416534: ($0, $1, $2, $3) => {
+  15418150: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -10627,7 +10577,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  15417709: ($0, $1) => {
+  15419325: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -10646,7 +10596,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15418314: ($0, $1) => {
+  15419930: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -10660,7 +10610,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15418803: $0 => {
+  15420419: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10694,7 +10644,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  15419809: ($0, $1, $2) => {
+  15421425: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -10765,7 +10715,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  15421277: ($0, $1, $2, $3, $4) => {
+  15422893: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -10802,18 +10752,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  15422265: $0 => {
+  15423881: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  15422348: () => {
+  15423964: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  15422417: () => window.innerWidth,
-  15422447: () => window.innerHeight
+  15424033: () => window.innerWidth,
+  15424063: () => window.innerHeight
 };
 
 function setupDeviceOrientation() {
@@ -10865,8 +10815,6 @@ var _main = Module["_main"] = makeInvalidEarlyAccess("_main");
 var _malloc = makeInvalidEarlyAccess("_malloc");
 
 var _strerror = makeInvalidEarlyAccess("_strerror");
-
-var ___funcs_on_exit = makeInvalidEarlyAccess("___funcs_on_exit");
 
 var _fflush = makeInvalidEarlyAccess("_fflush");
 
@@ -11025,7 +10973,6 @@ function assignWasmExports(wasmExports) {
   Module["_main"] = _main = createExportWrapper("__main_argc_argv", 2);
   _malloc = createExportWrapper("malloc", 1);
   _strerror = createExportWrapper("strerror", 1);
-  ___funcs_on_exit = createExportWrapper("__funcs_on_exit", 0);
   _fflush = createExportWrapper("fflush", 1);
   _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
   _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
@@ -11928,6 +11875,46 @@ function run(args = arguments_) {
     doRun();
   }
   checkStackCookie();
+}
+
+function checkUnflushedContent() {
+  // Compiler settings do not allow exiting the runtime, so flushing
+  // the streams is not possible. but in ASSERTIONS mode we check
+  // if there was something to flush, and if so tell the user they
+  // should request that the runtime be exitable.
+  // Normally we would not even include flush() at all, but in ASSERTIONS
+  // builds we do so just for this check, and here we see if there is any
+  // content to flush, that is, we check if there would have been
+  // something a non-ASSERTIONS build would have not seen.
+  // How we flush the streams depends on whether we are in SYSCALLS_REQUIRE_FILESYSTEM=0
+  // mode (which has its own special function for this; otherwise, all
+  // the code is inside libc)
+  var oldOut = out;
+  var oldErr = err;
+  var has = false;
+  out = err = x => {
+    has = true;
+  };
+  try {
+    // it doesn't matter if it fails
+    _fflush(0);
+    // also flush in the JS FS layer
+    [ "stdout", "stderr" ].forEach(name => {
+      var info = FS.analyzePath("/dev/" + name);
+      if (!info) return;
+      var stream = info.object;
+      var rdev = stream.rdev;
+      var tty = TTY.ttys[rdev];
+      if (tty?.output?.length) {
+        has = true;
+      }
+    });
+  } catch (e) {}
+  out = oldOut;
+  err = oldErr;
+  if (has) {
+    warnOnce("stdio streams had content in them that was not flushed. you should set EXIT_RUNTIME to 1 (see the Emscripten FAQ), or make sure to emit a newline when you printf etc.");
+  }
 }
 
 function preInit() {
