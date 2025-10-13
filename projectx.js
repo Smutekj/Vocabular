@@ -10501,7 +10501,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  15413937: $0 => {
+  15413615: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10509,7 +10509,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  15414162: () => {
+  15413840: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10517,7 +10517,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15414309: () => {
+  15413987: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10525,7 +10525,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15414543: $0 => {
+  15414221: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10549,11 +10549,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  15415095: () => {
+  15414773: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  15415163: ($0, $1, $2, $3) => {
+  15414841: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10595,7 +10595,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  15416856: ($0, $1, $2, $3) => {
+  15416534: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -10627,7 +10627,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  15418031: ($0, $1) => {
+  15417709: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -10646,7 +10646,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15418636: ($0, $1) => {
+  15418314: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -10660,7 +10660,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15419125: $0 => {
+  15418803: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10694,7 +10694,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  15420131: ($0, $1, $2) => {
+  15419809: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -10765,7 +10765,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  15421599: ($0, $1, $2, $3, $4) => {
+  15421277: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -10802,35 +10802,23 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  15422587: $0 => {
+  15422265: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  15422670: () => {
+  15422348: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  15422739: () => window.innerWidth,
-  15422769: () => window.innerHeight
+  15422417: () => window.innerWidth,
+  15422447: () => window.innerHeight
 };
 
 function setupDeviceOrientation() {
   if (typeof window.DeviceOrientationEvent !== "undefined") {
-    if (typeof window.DeviceOrientationEvent.requestPermission === "function") {
-      alert("IS FUNCTION!");
-      window.DeviceOrientationEvent.requestPermission().then(response => {
-        if (response === "granted") {
-          alert("GRANTED PERMISSION!");
-          window.addEventListener("deviceorientation", event => {
-            Module.deviceAlpha = event.alpha;
-            Module.deviceBeta = event.beta;
-            Module.deviceGamma = event.gamma;
-          });
-        }
-      });
-    } else {
+    if (typeof window.DeviceOrientationEvent.requestPermission === "function") {} else {
       window.addEventListener("deviceorientation", event => {
         Module.deviceAlpha = event.alpha;
         Module.deviceBeta = event.beta;
