@@ -16,7 +16,7 @@
     ],
     "start_url": "/Vocabular/",
     "scope": "./",
-    "display": "standalone",
+    "display": "fullscreen",
     "theme_color": "#B12A34",
     "background_color": "#B12A34"
   }
