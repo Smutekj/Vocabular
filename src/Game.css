@@ -4,7 +4,9 @@
 div.emscripten { text-align: center; }
 div.emscripten_border { border: 1px solid black; }
 /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-canvas.emscripten { border: 0px none; background-color: black; }
+
+canvas.emscripten { border: 0px none;   width: 100%;
+  height: 100vh; background-color: black; }
 
 #emscripten_logo {
   display: inline-block;
@@ -90,4 +92,27 @@ canvas.emscripten { border: 0px none; background-color: black; }
   color: white;
   font-family: 'Lucida Console', Monaco, monospace;
   outline: none;
+}
+
+
+.zoomButton{
+  width: 60px;             /* makes it square — adjust as needed */
+  height: 60px;
+  font-size: 50px;
+  font-weight: 500;
+  border: 5px solid yellow;
+  background-color: black;  /* optional — gives contrast */
+  color: yellow;            /* optional — matches border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;      /* optional — rounded edges */
+  cursor: pointer;
+}
+
+.zoomButton:hover {
+  transform: scale(1.1); /* slight zoom */
+  background-color: yellow;
+  color: black;
+  box-shadow: 0 0 20px yellow; /* glowing border effect */
 }

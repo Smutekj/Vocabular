@@ -4,14 +4,9 @@ import { initDB, getItem, setItem } from './db';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowUp } from '@fortawesome/free-solid-svg-icons'
 import { faArrowDown } from '@fortawesome/free-solid-svg-icons'
+import type { ExcerciseLine } from './Exercise.tsx';
 
-export type ExcerciseLine = {
-    correct_word: string;
-    translation: string;
-    image_src: string | null;
-    score: number;
-  };
-  
+
 
 type SummaryProps = {
   excercises: Array<ExcerciseLine>;

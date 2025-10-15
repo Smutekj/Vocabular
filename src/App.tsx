@@ -1,12 +1,26 @@
 import { useRef, useEffect, useState, type JSX } from 'react'
 import './App.css'
 
-import Summary, { type ExcerciseLine } from './Summary.tsx';
+import LineExercise, { type ExcerciseLine, type AnswerStatus } from './Exercise.tsx';
+import Summary from './Summary.tsx';
 import Game from './Game.tsx'
+import InstallButton from './InstallButton.tsx';
+import FinalExam, { type ExcerciseProps } from './Exam.tsx';
 
 import { initDB, getItem, setItem } from './db';
 import { faArrowsToCircle } from '@fortawesome/free-solid-svg-icons/faArrowsToCircle';
 
+
+const images = import.meta.glob("./assets/Images/*.png", { eager: true, import: 'default' });
+const image_names = Array<string>();
+const imageUrls = Object.values(images) as string[];
+const excercises_csv: Record<string, unknown> = import.meta.glob("./assets/Exercises/*.csv",
+  {
+    eager: true,
+    import: 'default',
+    query: '?raw',
+  });
+const exercisesUrls = Object.keys(excercises_csv) as string[];
 
 
 type WordGroup = {
@@ -17,89 +31,16 @@ type WordGroup = {
   progress: number;
 };
 
-type ExcerciseProps = {
-  excercises: Array<ExcerciseLine>;
-  words_score: Map<string, number>;
-  setWordsScore: (value: Map<string, number>) => void;
-  // swapActivity: (target_activity: ActivityType) => void;
-}
 
 type SmallExcerciseProps = ExcerciseProps & {
   inputChecked: boolean,
   exc_selection: Array<number>;
 };
 
-type ExcerciseProps2 = {
-  groups: Map<string, WordGroup>;
-  setWordsScore: (group: string, value: Map<string, number>) => void;
-}
-
-export const AnswerStatus = {
-  Unchecked: "UNCHECKED" as const,
-  Correct: "CORRECT" as const,
-  Incorrect: "INCORRECT" as const,
-};
-type AnswerStatus = typeof AnswerStatus[keyof typeof AnswerStatus];
-
-type LineProps = {
-  line_text: ExcerciseLine;
-  image: string;
-  status: AnswerStatus;
-  style: any;
-  focused: boolean;
-};
-
-const images = import.meta.glob('/src/assets/Images/*.png', { eager: true, import: 'default' });
-const image_names = Array<string>();
-
-function LineExercise({ line_text, image, status, style, focused }: LineProps) {
-
-  console.log(line_text);
-  const correct_word_no_space = line_text.correct_word.replace(' ', '');
-  return (
-    <div style={style}>
-      <div className="excerciseRect">
-        {image_names.includes(correct_word_no_space + ".png") ?
-          <img className="excerciseImage" src={'/src/assets/Images/' + correct_word_no_space + ".png"} /> :
-          line_text.translation
-        }
-      </div>
-
-      <input
-        type="text"
-        autoFocus={focused}
-        disabled={status === "INCORRECT" || status === "CORRECT"}
-      />
-      <div key={status} className={status !== "UNCHECKED" ? "correct" : ""}>
-        <span style={{ height: "20px", color: status === "CORRECT" ? "rgb(0,255,0)" : "red", marginLeft: "0.5rem" }}>
-          {status === "UNCHECKED" && " "}
-          {status === "CORRECT" && "✔ Correct!"}
-          {status === "INCORRECT" && "❌ " + line_text.correct_word}
-        </span>
-      </div>
-    </div >
-  )
-}
-
-function getRandomInt(min: number, max: number) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-function permute(arr: Array<any>) {
-
-  for (var i = 0; i < arr.length; ++i) {
-    const index = getRandomInt(i, arr.length - 1);
-    [arr[index], arr[i]] = [arr[i], arr[index]];
-  }
-}
-
 
 
 function addScore(correct_score: number, word: string, scores: Map<string, number>) {
-  scores?.has(word) ? scores.set(word,  + correct_score) : scores.set(word, correct_score);
+  scores?.has(word) ? scores.set(word, + correct_score) : scores.set(word, correct_score);
 };
 
 function SmallExcercise({ excercises, words_score, setWordsScore, inputChecked, exc_selection }: SmallExcerciseProps) {
@@ -144,7 +85,6 @@ function SmallExcercise({ excercises, words_score, setWordsScore, inputChecked, 
           exc_selection.map((exc_id, index) => (
             <LineExercise key={index}
               line_text={excercises[exc_id]}
-              image={image_names[index]}
               status={correctStates[index]}
               style={{ flex: "1 1 200px", alignItems: "center", minWidth: "200px", maxWidth: "100%" }}
               focused={index === 0}
@@ -203,7 +143,7 @@ function generateExcercise(
 ): Array<ExcerciseLine> {
 
   const excercise_weights = excercises.slice(first, first + selection_count).map((exc) => {
-    const score = (words_score.get(exc.correct_word) ??  0);
+    const score = (words_score.get(exc.correct_word) ?? 0);
     return Math.max(1, 5 - score);
   });
 
@@ -363,98 +303,6 @@ function Excercise2({ excercises, words_score, setWordsScore }: ExcerciseProps) 
   );
 }
 
-function FinalExam({ excercises, words_score, setWordsScore }: ExcerciseProps) {
-
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const [correctStates, setCorrectStates] = useState<AnswerStatus[]>(
-    Array(excercises.length).fill("UNCHECKED"));
-  const [shuffledLines, setShuffledLines] = useState<ExcerciseLine[]>([]);
-
-  useEffect(() => {
-    permute(excercises);
-    setShuffledLines(excercises);
-  }, [excercises]);
-
-  const handleReadAllInputs = () => {
-    if (containerRef.current) {
-      const inputs = containerRef.current.querySelectorAll<HTMLInputElement>("input");
-      const values = Array.from(inputs).map((i) => i.value);
-      const new_states = Array<AnswerStatus>(correctStates.length);
-      const new_scores = words_score;
-      values.forEach((value, index) => {
-        const exc_index = (index);
-        const correct_word = shuffledLines[exc_index].correct_word;
-        const is_correct = value === correct_word;
-        new_states[index] = is_correct ? "CORRECT" : "INCORRECT";
-        addScore(is_correct ? 1 : 0, correct_word, new_scores);
-      });
-      setCorrectStates(new_states);
-      setWordsScore(new_scores);
-    }
-  };
-  const resetAllInputs = () => {
-    if (containerRef.current) {
-      const inputs = containerRef.current.querySelectorAll<HTMLInputElement>("input");
-      const values = Array.from(inputs).map((i) => i.value);
-      const new_states = Array<AnswerStatus>(values.length);
-      for (const i in values) {
-        new_states[i] = "UNCHECKED";
-        inputs[i].value = "";
-      }
-      setCorrectStates(new_states);
-    }
-  };
-
-  return (
-    <div>
-      {/* <div ref={containerRef}
-        style={{
-          display: "flex", flexWrap: "wrap",
-          gap: "1rem", justifyContent: "center"
-        }}>
-        {shuffledLines.length > 1 &&
-          shuffledLines.slice(activeCard, activeCard + 3).map((exc_line, index) => (
-            <LineExercise key={index}
-              line_text={exc_line}
-              image={image_names[index]}
-              status={correctStates[index]}
-              style={{ flex: "1 1 200px", alignItems: "center", minWidth: "200px", maxWidth: "100%" }}
-            />
-          ))
-        }
-      </div>
-      {inputChecked ?
-        <button onClick={() => { setInputChecked(false); changeCard(3) }}>Next</button>
-        :
-        <button onClick={() => { handleReadAllInputs(); setInputChecked(true) }}>Check</button>
-      } */}
-
-      <div
-        ref={containerRef}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}>
-        {shuffledLines.map((line, index) => (
-          line ? (
-            <LineExercise key={index}
-              line_text={line}
-              image={image_names[0]}
-              status={correctStates[index]}
-              style={{ flex: "1 1 200px", alignItems: "center", minWidth: "200px", maxWidth: "100%" }}
-              focused={index === 0}
-            />
-          ) : null
-        ))}
-      </div>
-      <button onClick={handleReadAllInputs}>Submit</button>
-      <button onClick={resetAllInputs}>Try Again</button>
-
-    </div>
-  );
-}
 
 type LoaderProps = {
   exc_filenames: Array<string>;
@@ -465,7 +313,7 @@ function parseExcerciseLine(line: string): ExcerciseLine {
   const split_line = line.split(",");
   //! include image if it exists 
   const image_filename = split_line[2].replace(' ', '') + ".png";
-  const image = image_names.includes(image_filename) ? '/src/assets/Images/' + image_filename : null;
+  const image = image_names.includes(image_filename) ? String(`${import.meta.env.BASE_URL}Images/` + image_filename) : null;
   return { correct_word: split_line[2], translation: split_line[1], image_src: image, score: 0 };
 }
 
@@ -474,7 +322,7 @@ async function loadWordGroups(exc_filenames: Array<string>): Promise<Map<string,
 
   await Promise.all(
     exc_filenames.map((filename, index) => {
-      return fetch("/" + filename + ".csv")
+      return fetch(filename + ".csv")
         .then((response) => response.text())
         .then((data) => {
           const excercises = data.split(/\r\n|\r|\n/).map((line, index) => {
@@ -506,13 +354,30 @@ export const AnimationState = {
 };
 type AnimationState = typeof AnimationState[keyof typeof AnimationState];
 
+async function uploadExercisesToDb(word_groups: Map<string, WordGroup>) {
+  const FS = (window as any).FS;
+  const Module = (window as any).Module;
+  if (!Module) { return; }
+  if (!FS?.analyzePath('/execDb').exists) {
+    FS?.mkdir("/execDb");
+  }
+
+  word_groups.forEach((group, group_name) => {
+    setItem(group_name, [...group.excercises]); //! write to Indexed database
+    FS?.writeFile("/execDb/" + group_name + ".json", JSON.stringify({ [group_name]: [...group.excercises] }));
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    FS?.syncfs(false, (err: any) => { err ? reject(err) : resolve() });
+  });
+}
+
 function ExcerciseLoader({ exc_filenames, setAppState }: LoaderProps) {
 
   const [activity, setActivity] = useState<ActivityType>("summary");
-
   const [animationState, setAnimationState] = useState<AnimationState>("FadeIn");
   const [loaderState, setLoaderState] = useState<string>("loading");
-  const [wordGroups, setWordGroups] = useState<Map<string, WordGroup>>();
+  const [wordGroups, setWordGroups] = useState<Map<string, WordGroup>>(new Map<string, WordGroup>);
   const [excercises, setExcercises] = useState<Array<ExcerciseLine>>([]);
   const [words_score, setWordsScore] = useState<Map<string, number>>(() => { //! load from local storage if exists
     const saved = localStorage.getItem("scores");
@@ -551,7 +416,6 @@ function ExcerciseLoader({ exc_filenames, setAppState }: LoaderProps) {
     }
   }
 
-
   function ActivitySwitcher(currentActivity: ActivityType) {
     const activityComps: Record<ActivityType, React.ComponentType<any>> = {
       smallExcercise: Excercise2,
@@ -567,9 +431,10 @@ function ExcerciseLoader({ exc_filenames, setAppState }: LoaderProps) {
     case 'summary':
       content = (
         <>
-          <button onClick={() => setAppState(1)}>Game Practice</button>
+          <button onClick={() => { uploadExercisesToDb(wordGroups); setAppState(1); }}>Game Practice</button>
           <button onClick={() => swapActivity("exam")}>FinalExam</button>
           <button onClick={() => swapActivity("smallExcercise")}>Excercise</button>
+          <button onClick={() => setAppState(2)}>Select Topics</button>
           {ActivitySwitcher(activity)}
           <button onClick={() => swapActivity("smallExcercise")}>Excercise</button>
         </>
@@ -610,21 +475,68 @@ function ExcerciseLoader({ exc_filenames, setAppState }: LoaderProps) {
   );
 }
 
-function App() {
-  const [selectedTopics, setSelectedTopics] = useState<string[]>(["Werkzeug"]);
-  const [topic, setTopic] = useState<string>("Werkzeug");
-  const [appState, setAppState] = useState<number>(0);
+type TopicSelectionProps = {
+  // topic_groups: Map<string, WordGroup>;
+  selected_topics: string[]
+  setSelectedTopics: (topics: string[]) => void;
+  setAppState: (state: number) => void;
+};
 
-  const onSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTopic(e.target.value)
-    const selectEl = e.target;
-    const new_selection = new Array<string>();
-    for (const opt in selectEl.options) {
-      selectEl.options[opt].selected && new_selection.push(selectEl.options[opt].value);
+function TopicSelection({ selected_topics, setSelectedTopics, setAppState }: TopicSelectionProps) {
+
+
+  useEffect(() => {
+
+  }, [selected_topics]);
+
+  const onSelection2 = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, topic: string) => {
+    let new_selection: string[] = [];
+    if (!(e.shiftKey || e.ctrlKey)) {
+      new_selection.push(topic);
+    } else {
+      if (selected_topics.includes(topic)) {
+        new_selection = selected_topics.filter(t => t !== topic);
+      } else {
+        new_selection = [...selected_topics, topic];
+      }
     }
     setSelectedTopics(new_selection);
-    console.log(new_selection)
+    localStorage.setItem("topics", new_selection.toString());
   };
+
+
+  return (
+    <>
+      <div style={{ fontWeight: "bolder", fontSize: "40px" }}>Select Topic</div>
+      <div className='navigationContainer'>
+        <button onClick={() => { setAppState(0) }}>Back</button>
+      </div>
+      <div className='topicSelectionContainer'>
+        {exercisesUrls.map((csv_url: string, index: number) => {
+          const sUrl = csv_url.split('/');
+          const topic = sUrl[sUrl.length - 1].split('.')[0]
+          const selected = selected_topics.includes(topic);
+          return (
+            <div
+              key={csv_url}
+              className="topicSelectionRect"
+              style={{ borderColor: selected ? "green" : "gray" }}
+              onClick={(e) => onSelection2(e, topic)}>
+              {topic}
+            </div>
+          )
+        }
+        )}
+      </div>
+    </>
+  );
+}
+
+function App() {
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["Werkzeug"]);
+  const [appState, setAppState] = useState<number>(0);
+
+  localStorage.setItem("topics", selectedTopics.toString());
 
   image_names.length = 0;
   for (var v in images) {
@@ -632,20 +544,41 @@ function App() {
     image_names.push(split_path[split_path.length - 1]);
   }
 
+  useEffect(() => {
+
+    if(appState === 1 || appState == 2)
+    {
+      window.history.pushState(appState, "", "");
+    }
+
+    const handleBack = (e: PopStateEvent) => {
+      queueMicrotask(() => {
+        if (appState === 0) window.history.back();
+        else if (appState === 1) setAppState(0);
+        else if (appState === 2) setAppState(0);
+        else window.history.back();
+      });
+    };
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, [appState]);
+
+  // window.history.replaceState(appState, "", "");
+
+  // window.onpopstate = function (event) {
+  //   if (event.state) { 
+  //     alert("POPPED")
+  //     var state = event.state; 
+  //     setAppState(state); // See example render function in summary below
+  //   }  
+  // };
+
   return (
     <>
-      <div>Select Topic</div>
-      <select
-        size={4}
-        multiple
-        onChange={onSelection}
-      >
-        <option value="Werkzeug">Werkzeug</option>
-        <option value="Kleidung">Kleidung</option>
-      </select>
-
-      {/* {appState === 0 && <Text filename={topic} setAppState={setAppState}></Text>} */}
-      {appState === 0 && <ExcerciseLoader exc_filenames={[topic]} setAppState={setAppState}></ExcerciseLoader>}
+      {appState === 0 && <InstallButton></InstallButton>}
+      {appState === 2 && <TopicSelection selected_topics={selectedTopics}
+        setSelectedTopics={setSelectedTopics} setAppState={setAppState}></TopicSelection>}
+      {appState === 0 && <ExcerciseLoader exc_filenames={selectedTopics} setAppState={setAppState}></ExcerciseLoader>}
       <Game setAppState={setAppState} visible={appState === 1}></Game>
 
 
@@ -655,78 +588,3 @@ function App() {
 
 export default App
 
-
-
-// function Text({ filename, setAppState }: TextProps) {
-
-//   const [text, setText] = useState<Array<ExcerciseLine>>([]);
-//   const [state, setState] = useState<number>(0);
-
-//   const [words_score, setWordsScore] = useState<Map<string, number>>(() => { //! load from local storage if exists
-//     const saved = localStorage.getItem("scores");
-//     initDB().then(async () => {
-//       const scores_object = getItem<Object>("scores");
-//       setWordsScore(new Map(Object.entries(scores_object)));
-//     });
-
-//     if (saved) {
-//       const parsed = JSON.parse(saved);
-//       return new Map(Object.entries(parsed));
-//     }
-//     localStorage.setItem("scores", JSON.stringify({}));
-//     return new Map();
-//   }
-//   );
-
-//   useEffect(() => {
-//     fetch("/" + filename + ".csv")
-//       .then((response) => response.text())
-//       .then((data) => {
-//         const excercises = data.split(/\r\n|\r|\n/).map((line, index) => {
-//           const split_line = line.split(",");
-//           //! include image if it exists 
-//           const image_filename = split_line[2].replace(' ', '') + ".png";
-//           const image = image_names.includes(image_filename) ? '/src/assets/Images/' + image_filename : null;
-//           return { correct_word: split_line[2], translation: split_line[1], image_src: image };
-//         });
-//         setText(excercises);
-//       })
-//       .catch((error) => console.error("Error loading file:", error));
-//   }, [filename]);
-
-//   function swapSummaryExcercise() {
-//     if (state === 0) {
-//       setState(1);
-//       setTimeout(() => { setState(2) }, 1000);
-//     }
-//     if (state === 2) {
-//       setState(3);
-//       setTimeout(() => { setState(0) }, 1000);
-//     }
-//   }
-
-//   const stateClasses = ["fadeIn", "swapAnimationOut", "fadeIn", "swapAnimationOut"];
-
-//   return (
-//     <div
-//       key={state}
-//       className={stateClasses[state]} >
-//       switch(state){
-
-//       }
-//       {state === 0 || state === 1 ?
-//         <>
-//           <FinalExam excercises={text} words_score={words_score} setWordsScore={setWordsScore} />
-//           <button onClick={swapSummaryExcercise}>Finnish Excercise</button>
-//         </>
-//         :
-//         <>
-//           <button onClick={() => setAppState(1)}>Game Practice</button>
-//           <button onClick={swapSummaryExcercise}>Excercise</button>
-//           <Summary excercises={text} words_score={words_score} setWordsScore={setWordsScore} />
-//           <button onClick={swapSummaryExcercise}>Excercise</button>
-//         </>
-//       }
-//     </div>
-//   )
-// }

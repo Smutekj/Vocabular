@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, act } from 'react'
+import './Game.css'
 
 type GameProps = {
     setAppState: (state: number) => void;
@@ -34,9 +35,20 @@ function Game({ setAppState, visible }: GameProps) {
         }
         if (visible && canvasRef.current) {
             const canvas = canvasRef.current;
-            canvas.width = 800;
-            canvas.height = 600;
 
+            canvas.scrollIntoView({ behavior: "smooth" })
+            canvas.focus();
+            var scale = 1;//window.devicePixelRatio; // Get DPR
+
+            // canvas.style = "width: 95vw; height: 95vh";
+            // Set the canvas element's CSS size
+            var elementWidth = canvas.clientWidth;
+            var elementHeight = canvas.clientHeight;
+            if (typeof Module !== 'undefined' && Module.canvas && Module.canvas === canvas) {
+                canvas.width = elementWidth * scale;
+                canvas.height = elementHeight * scale;
+            }
+            console.log("changed canvas from browser to:\nw: " + canvas.width + " h " + canvas.height)
             Module?._setCanvasSize?.(canvas.width, canvas.height);
             Module?._emscripten_resume_main_loop?.();
 
@@ -47,7 +59,6 @@ function Game({ setAppState, visible }: GameProps) {
 
     useEffect(() => {
         if (!canvasRef.current) return;
-
 
         const canvasEl = document.getElementById("canvas");
         canvasEl?.focus();
@@ -83,7 +94,7 @@ function Game({ setAppState, visible }: GameProps) {
 
             const script = document.createElement("script");
             script.id = "script";
-            script.src = "projectx.js";
+            script.src = `${import.meta.env.BASE_URL}projectx.js`;
             script.async = true;
             document.body.appendChild(script);
         }
@@ -92,16 +103,33 @@ function Game({ setAppState, visible }: GameProps) {
             // document.body.removeChild(script);
         };
     }, []);
+
+    function onZoomOutClick() {
+        const Module = (window as any).Module;
+        Module?._zoomCamera(1. / 0.9);
+    }
+    function onZoomInClick() {
+        const Module = (window as any).Module;
+        Module?._zoomCamera(0.9);
+    }
+    function onFullScreenToggle() {
+        const Module = (window as any).Module;
+        Module?._toggleFullscreen();
+        // Module?.requestFullscreen(false, true);
+        console.log("TOGGLING FULLSCREEN!");
+    }
+
     return (
         <div style={{ display: visible ? "block" : "none" }}>
-            <div className="spinner" id='spinner'></div>
-            <div className="emscripten" id="status">Downloading...</div>
+            {/* <div className="spinner" id='spinner'></div> */}
+            {/* <div className="emscripten" id="status">Downloading...</div> */}
+            <div style={{ "display": "flex", "flexDirection": "row", "justifyContent": "center" }}>
+                <div className="zoomButton" onClick={onZoomOutClick}>-</div>
+                <div className="zoomButton" onClick={onZoomInClick}>+</div>
+            </div>
             <span id='controls'>
                 <span><input type="checkbox" id="resize" />Resize canvas</span>
-                <span><input type="checkbox" id="pointerLock" defaultChecked />Lock/hide mouse pointer &nbsp;&nbsp;&nbsp;</span>
-                {/* <span><input type="button" value="Fullscreen" onClick={Module.requestFullscreen(document.getElementById('pointerLock').checked, 
-                                                                                  document.getElementById('resize').checked)}/> */}
-                {/* </span> */}
+                <span><input type="button" id="fullscreenButton" onClick={onFullScreenToggle} value="Fullscreen" /></span>
             </span>
             <div className="emscripten_border">
                 {/* onContextMenu={(event) => event.preventDefault()} */}
