@@ -6077,6 +6077,8 @@ var _emscripten_set_canvas_element_size = (target, width, height) => {
   if (!canvas) return -4;
   canvas.width = width;
   canvas.height = height;
+  canvas.widthNative = width;
+  canvas.heightNative = height;
   if (canvas.GLctxObject) GL.resizeOffscreenFramebuffer(canvas.GLctxObject);
   return 0;
 };
