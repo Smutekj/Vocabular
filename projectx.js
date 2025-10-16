@@ -4571,22 +4571,22 @@ var Browser = {
   windowedHeight: 0,
   setFullscreenCanvasSize() {
     // check if SDL is available
-    if (typeof SDL != "undefined") {
-      var flags = HEAPU32[((SDL.screen) >> 2)];
+    if (typeof SDL2 != "undefined") {
+      var flags = HEAPU32[((SDL2.screen) >> 2)];
       flags = flags | 8388608;
       // set SDL_FULLSCREEN flag
-      HEAP32[((SDL.screen) >> 2)] = flags;
+      HEAP32[((SDL2.screen) >> 2)] = flags;
     }
     Browser.updateCanvasDimensions(Browser.getCanvas());
     Browser.updateResizeListeners();
   },
   setWindowedCanvasSize() {
     // check if SDL is available
-    if (typeof SDL != "undefined") {
-      var flags = HEAPU32[((SDL.screen) >> 2)];
+    if (typeof SDL2 != "undefined") {
+      var flags = HEAPU32[((SDL2.screen) >> 2)];
       flags = flags & ~8388608;
       // clear SDL_FULLSCREEN flag
-      HEAP32[((SDL.screen) >> 2)] = flags;
+      HEAP32[((SDL2.screen) >> 2)] = flags;
     }
     Browser.updateCanvasDimensions(Browser.getCanvas());
     Browser.updateResizeListeners();
