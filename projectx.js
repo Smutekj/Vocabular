@@ -4571,6 +4571,7 @@ var Browser = {
   windowedHeight: 0,
   setFullscreenCanvasSize() {
     // check if SDL is available
+    const SDL2 = Module["SDL2"];
     if (typeof SDL2 != "undefined") {
       var flags = HEAPU32[((SDL2.screen) >> 2)];
       flags = flags | 8388608;
@@ -4582,6 +4583,7 @@ var Browser = {
   },
   setWindowedCanvasSize() {
     // check if SDL is available
+    const SDL2 = Module["SDL2"];
     if (typeof SDL2 != "undefined") {
       var flags = HEAPU32[((SDL2.screen) >> 2)];
       flags = flags & ~8388608;
