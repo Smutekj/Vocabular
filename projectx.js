@@ -4578,7 +4578,7 @@ var Browser = {
       // set SDL_FULLSCREEN flag
       HEAP32[((SDL2.screen) >> 2)] = flags;
     }
-    this.setCanvasSize(Browser.getCanvas().width, Browser.getCanvas().height, true);
+    // this.setCanvasSize(Browser.getCanvas().width, Browser.getCanvas().height, true);
     Browser.updateCanvasDimensions(Browser.getCanvas());
     Browser.updateResizeListeners();
   },
@@ -6077,8 +6077,6 @@ var _emscripten_set_canvas_element_size = (target, width, height) => {
   if (!canvas) return -4;
   canvas.width = width;
   canvas.height = height;
-  canvas.widthNative = width;
-  canvas.heightNative = height;
   if (canvas.GLctxObject) GL.resizeOffscreenFramebuffer(canvas.GLctxObject);
   return 0;
 };
