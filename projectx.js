@@ -4596,8 +4596,10 @@ var Browser = {
       canvas.widthNative = wNative;
       canvas.heightNative = hNative;
     } else {
-      wNative = canvas.width;
-      hNative = canvas.height;
+      // wNative = canvas.width;
+      // hNative = canvas.height;
+      wNative = canvas.widthNative;
+      hNative = canvas.heightNative;
     }
     var w = wNative;
     var h = hNative;
