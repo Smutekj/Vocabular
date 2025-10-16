@@ -4571,25 +4571,22 @@ var Browser = {
   windowedHeight: 0,
   setFullscreenCanvasSize() {
     // check if SDL is available
-    const SDL2 = Module["SDL"];
-    if (typeof SDL2 != "undefined") {
-      var flags = HEAPU32[((SDL2.screen) >> 2)];
+    if (typeof SDL != "undefined") {
+      var flags = HEAPU32[((SDL.screen) >> 2)];
       flags = flags | 8388608;
       // set SDL_FULLSCREEN flag
-      HEAP32[((SDL2.screen) >> 2)] = flags;
+      HEAP32[((SDL.screen) >> 2)] = flags;
     }
-    // this.setCanvasSize(Browser.getCanvas().width, Browser.getCanvas().height, true);
     Browser.updateCanvasDimensions(Browser.getCanvas());
     Browser.updateResizeListeners();
   },
   setWindowedCanvasSize() {
     // check if SDL is available
-    const SDL2 = Module["SDL"];
-    if (typeof SDL2 != "undefined") {
-      var flags = HEAPU32[((SDL2.screen) >> 2)];
+    if (typeof SDL != "undefined") {
+      var flags = HEAPU32[((SDL.screen) >> 2)];
       flags = flags & ~8388608;
       // clear SDL_FULLSCREEN flag
-      HEAP32[((SDL2.screen) >> 2)] = flags;
+      HEAP32[((SDL.screen) >> 2)] = flags;
     }
     Browser.updateCanvasDimensions(Browser.getCanvas());
     Browser.updateResizeListeners();
@@ -4599,10 +4596,8 @@ var Browser = {
       canvas.widthNative = wNative;
       canvas.heightNative = hNative;
     } else {
-      wNative = canvas.width;
-      hNative = canvas.height;
-      // wNative = canvas.widthNative;
-      // hNative = canvas.heightNative;
+      wNative = canvas.widthNative;
+      hNative = canvas.heightNative;
     }
     var w = wNative;
     var h = hNative;
@@ -10456,7 +10451,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  15415215: $0 => {
+  15414591: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10464,7 +10459,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  15415440: () => {
+  15414816: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10472,7 +10467,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15415587: () => {
+  15414963: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10480,7 +10475,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15415821: $0 => {
+  15415197: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10504,11 +10499,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  15416373: () => {
+  15415749: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  15416441: ($0, $1, $2, $3) => {
+  15415817: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10550,7 +10545,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  15418134: ($0, $1, $2, $3) => {
+  15417510: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -10582,7 +10577,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  15419309: ($0, $1) => {
+  15418685: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -10601,7 +10596,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15419914: ($0, $1) => {
+  15419290: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -10615,7 +10610,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15420403: $0 => {
+  15419779: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10649,7 +10644,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  15421409: ($0, $1, $2) => {
+  15420785: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -10720,7 +10715,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  15422877: ($0, $1, $2, $3, $4) => {
+  15422253: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -10757,18 +10752,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  15423865: $0 => {
+  15423241: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  15423948: () => {
+  15423324: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  15424017: () => window.innerWidth,
-  15424047: () => window.innerHeight
+  15423393: () => window.innerWidth,
+  15423423: () => window.innerHeight
 };
 
 function setupDeviceOrientation() {
@@ -10812,6 +10807,8 @@ var _toggleFullscreen = Module["_toggleFullscreen"] = makeInvalidEarlyAccess("_t
 var _disableInput = Module["_disableInput"] = makeInvalidEarlyAccess("_disableInput");
 
 var _free = makeInvalidEarlyAccess("_free");
+
+var _restartGame = Module["_restartGame"] = makeInvalidEarlyAccess("_restartGame");
 
 var _zoomCamera = Module["_zoomCamera"] = makeInvalidEarlyAccess("_zoomCamera");
 
@@ -10974,6 +10971,7 @@ function assignWasmExports(wasmExports) {
   Module["_toggleFullscreen"] = _toggleFullscreen = createExportWrapper("toggleFullscreen", 2);
   Module["_disableInput"] = _disableInput = createExportWrapper("disableInput", 1);
   _free = createExportWrapper("free", 1);
+  Module["_restartGame"] = _restartGame = createExportWrapper("restartGame", 0);
   Module["_zoomCamera"] = _zoomCamera = createExportWrapper("zoomCamera", 1);
   Module["_main"] = _main = createExportWrapper("__main_argc_argv", 2);
   _malloc = createExportWrapper("malloc", 1);
@@ -11935,3 +11933,51 @@ function preInit() {
 preInit();
 
 run();
+
+// end include: postamble.js
+// include: /home/smutekj/projects/languagePlatformer/patchBrowserUpdateScreen.js
+if (typeof Browser != "undefined") {
+  Browser.updateCanvasDimensions = (canvas, wNative, hNative) => {
+    if (wNative && hNative) {
+      canvas.widthNative = wNative;
+      canvas.heightNative = hNative;
+    } else {
+      wNative = canvas.width;
+      hNative = canvas.height;
+    }
+    var w = wNative;
+    var h = hNative;
+    if (Module["forcedAspectRatio"] > 0) {
+      if (w / h < Module["forcedAspectRatio"]) {
+        w = Math.round(h * Module["forcedAspectRatio"]);
+      } else {
+        h = Math.round(w / Module["forcedAspectRatio"]);
+      }
+    }
+    if (((document["fullscreenElement"] || document["mozFullScreenElement"] || document["msFullscreenElement"] || document["webkitFullscreenElement"] || document["webkitCurrentFullScreenElement"]) === canvas.parentNode) && (typeof screen != "undefined")) {
+      var factor = Math.min(screen.width / w, screen.height / h);
+      w = Math.round(w * factor);
+      h = Math.round(h * factor);
+    }
+    if (Browser.resizeCanvas) {
+      if (canvas.width != w) canvas.width = w;
+      if (canvas.height != h) canvas.height = h;
+      if (typeof canvas.style != "undefined") {
+        canvas.style.removeProperty("width");
+        canvas.style.removeProperty("height");
+      }
+    } else {
+      if (canvas.width != wNative) canvas.width = wNative;
+      if (canvas.height != hNative) canvas.height = hNative;
+      if (typeof canvas.style != "undefined") {
+        if (w != wNative || h != hNative) {
+          canvas.style.setProperty("width", w + "px", "important");
+          canvas.style.setProperty("height", h + "px", "important");
+        } else {
+          canvas.style.removeProperty("width");
+          canvas.style.removeProperty("height");
+        }
+      }
+    }
+  };
+}
