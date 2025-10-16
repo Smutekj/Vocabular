@@ -4571,19 +4571,20 @@ var Browser = {
   windowedHeight: 0,
   setFullscreenCanvasSize() {
     // check if SDL is available
-    const SDL2 = Module["SDL2"];
+    const SDL2 = Module["SDL"];
     if (typeof SDL2 != "undefined") {
       var flags = HEAPU32[((SDL2.screen) >> 2)];
       flags = flags | 8388608;
       // set SDL_FULLSCREEN flag
       HEAP32[((SDL2.screen) >> 2)] = flags;
     }
+    this.setCanvasSize(Browser.getCanvas().width, Browser.getCanvas().height, true);
     Browser.updateCanvasDimensions(Browser.getCanvas());
     Browser.updateResizeListeners();
   },
   setWindowedCanvasSize() {
     // check if SDL is available
-    const SDL2 = Module["SDL2"];
+    const SDL2 = Module["SDL"];
     if (typeof SDL2 != "undefined") {
       var flags = HEAPU32[((SDL2.screen) >> 2)];
       flags = flags & ~8388608;
@@ -4598,10 +4599,10 @@ var Browser = {
       canvas.widthNative = wNative;
       canvas.heightNative = hNative;
     } else {
-      // wNative = canvas.width;
-      // hNative = canvas.height;
-      wNative = canvas.widthNative;
-      hNative = canvas.heightNative;
+      wNative = canvas.width;
+      hNative = canvas.height;
+      // wNative = canvas.widthNative;
+      // hNative = canvas.heightNative;
     }
     var w = wNative;
     var h = hNative;
