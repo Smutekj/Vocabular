@@ -3778,25 +3778,6 @@ function ___syscall_fstat64(fd, buf) {
   }
 }
 
-var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
-  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
-  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
-};
-
-function ___syscall_getcwd(buf, size) {
-  try {
-    if (size === 0) return -28;
-    var cwd = FS.cwd();
-    var cwdLengthInBytes = lengthBytesUTF8(cwd) + 1;
-    if (size < cwdLengthInBytes) return -68;
-    stringToUTF8(cwd, buf, size);
-    return cwdLengthInBytes;
-  } catch (e) {
-    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
-    return -e.errno;
-  }
-}
-
 function ___syscall_ioctl(fd, op, varargs) {
   SYSCALLS.varargs = varargs;
   try {
@@ -4023,6 +4004,11 @@ function __munmap_js(addr, len, prot, flags, fd, offset) {
     return -e.errno;
   }
 }
+
+var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
+  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
+  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+};
 
 var __tzset_js = (timezone, daylight, std_name, dst_name) => {
   // TODO: Use (malleable) environment variables instead of system settings.
@@ -9310,8 +9296,6 @@ var _emscripten_glWaitSync = _glWaitSync;
 
 var _emscripten_has_asyncify = () => 1;
 
-var _emscripten_pause_main_loop = () => MainLoop.pause();
-
 var doRequestFullscreen = (target, strategy) => {
   if (!JSEvents.fullscreenEnabled()) return -1;
   target = findEventTarget(target);
@@ -9427,10 +9411,6 @@ var _emscripten_resize_heap = requestedSize => {
   }
   err(`Failed to grow the heap from ${oldSize} bytes to ${newSize} bytes, not enough memory!`);
   return false;
-};
-
-var _emscripten_run_script = ptr => {
-  eval(UTF8ToString(ptr));
 };
 
 /** @suppress {checkTypes} */ var _emscripten_sample_gamepad_data = () => {
@@ -10451,7 +10431,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  15414591: $0 => {
+  15407864: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10459,7 +10439,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  15414816: () => {
+  15408089: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10467,7 +10447,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15414963: () => {
+  15408236: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10475,7 +10455,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15415197: $0 => {
+  15408470: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10499,11 +10479,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  15415749: () => {
+  15409022: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  15415817: ($0, $1, $2, $3) => {
+  15409090: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10545,7 +10525,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  15417510: ($0, $1, $2, $3) => {
+  15410783: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -10577,7 +10557,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  15418685: ($0, $1) => {
+  15411958: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -10596,7 +10576,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15419290: ($0, $1) => {
+  15412563: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -10610,7 +10590,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15419779: $0 => {
+  15413052: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10644,7 +10624,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  15420785: ($0, $1, $2) => {
+  15414058: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -10715,7 +10695,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  15422253: ($0, $1, $2, $3, $4) => {
+  15415526: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -10752,19 +10732,23 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  15423241: $0 => {
+  15416514: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  15423324: () => {
+  15416597: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  15423393: () => window.innerWidth,
-  15423423: () => window.innerHeight
+  15416666: () => window.innerWidth,
+  15416696: () => window.innerHeight
 };
+
+function setAssetsLoaded() {
+  return Module.setAssetsLoaded();
+}
 
 function setupDeviceOrientation() {
   if (typeof window.DeviceOrientationEvent !== "undefined") {
@@ -10800,6 +10784,8 @@ function getWindowHeight() {
 }
 
 // Imports from the Wasm binary.
+var _assetsLoaded = Module["_assetsLoaded"] = makeInvalidEarlyAccess("_assetsLoaded");
+
 var _setCanvasSize = Module["_setCanvasSize"] = makeInvalidEarlyAccess("_setCanvasSize");
 
 var _toggleFullscreen = Module["_toggleFullscreen"] = makeInvalidEarlyAccess("_toggleFullscreen");
@@ -10860,9 +10846,9 @@ var dynCall_vif = makeInvalidEarlyAccess("dynCall_vif");
 
 var dynCall_vi = makeInvalidEarlyAccess("dynCall_vi");
 
-var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
-
 var dynCall_vii = makeInvalidEarlyAccess("dynCall_vii");
+
+var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
 
 var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
@@ -10967,6 +10953,7 @@ var _asyncify_start_rewind = makeInvalidEarlyAccess("_asyncify_start_rewind");
 var _asyncify_stop_rewind = makeInvalidEarlyAccess("_asyncify_stop_rewind");
 
 function assignWasmExports(wasmExports) {
+  Module["_assetsLoaded"] = _assetsLoaded = createExportWrapper("assetsLoaded", 0);
   Module["_setCanvasSize"] = _setCanvasSize = createExportWrapper("setCanvasSize", 2);
   Module["_toggleFullscreen"] = _toggleFullscreen = createExportWrapper("toggleFullscreen", 2);
   Module["_disableInput"] = _disableInput = createExportWrapper("disableInput", 1);
@@ -10997,8 +10984,8 @@ function assignWasmExports(wasmExports) {
   dynCalls["vifi"] = dynCall_vifi = createExportWrapper("dynCall_vifi", 4);
   dynCalls["vif"] = dynCall_vif = createExportWrapper("dynCall_vif", 3);
   dynCalls["vi"] = dynCall_vi = createExportWrapper("dynCall_vi", 2);
-  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["vii"] = dynCall_vii = createExportWrapper("dynCall_vii", 3);
+  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
   dynCalls["viii"] = dynCall_viii = createExportWrapper("dynCall_viii", 4);
   dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
@@ -11064,7 +11051,6 @@ var wasmImports = {
   /** @export */ __resumeException: ___resumeException,
   /** @export */ __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */ __syscall_fstat64: ___syscall_fstat64,
-  /** @export */ __syscall_getcwd: ___syscall_getcwd,
   /** @export */ __syscall_ioctl: ___syscall_ioctl,
   /** @export */ __syscall_lstat64: ___syscall_lstat64,
   /** @export */ __syscall_newfstatat: ___syscall_newfstatat,
@@ -11385,11 +11371,9 @@ var wasmImports = {
   /** @export */ emscripten_glViewport: _emscripten_glViewport,
   /** @export */ emscripten_glWaitSync: _emscripten_glWaitSync,
   /** @export */ emscripten_has_asyncify: _emscripten_has_asyncify,
-  /** @export */ emscripten_pause_main_loop: _emscripten_pause_main_loop,
   /** @export */ emscripten_request_fullscreen_strategy: _emscripten_request_fullscreen_strategy,
   /** @export */ emscripten_request_pointerlock: _emscripten_request_pointerlock,
   /** @export */ emscripten_resize_heap: _emscripten_resize_heap,
-  /** @export */ emscripten_run_script: _emscripten_run_script,
   /** @export */ emscripten_sample_gamepad_data: _emscripten_sample_gamepad_data,
   /** @export */ emscripten_set_beforeunload_callback_on_thread: _emscripten_set_beforeunload_callback_on_thread,
   /** @export */ emscripten_set_blur_callback_on_thread: _emscripten_set_blur_callback_on_thread,
@@ -11505,11 +11489,11 @@ var wasmImports = {
   /** @export */ invoke_vii,
   /** @export */ invoke_viii,
   /** @export */ invoke_viiii,
-  /** @export */ invoke_viiiii,
   /** @export */ invoke_viiiiiii,
   /** @export */ invoke_viiiiiiiiii,
   /** @export */ invoke_viiiiiiiiiiiiiii,
   /** @export */ loadFromStorage,
+  /** @export */ setAssetsLoaded,
   /** @export */ setupDeviceOrientation
 };
 
@@ -11787,17 +11771,6 @@ function invoke_viiiiiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
   var sp = stackSave();
   try {
     dynCall_viiiiiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiiii(index, a1, a2, a3, a4, a5) {
-  var sp = stackSave();
-  try {
-    dynCall_viiiii(index, a1, a2, a3, a4, a5);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
