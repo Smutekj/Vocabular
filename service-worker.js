@@ -7,6 +7,7 @@ self.addEventListener('install', () => {
 
 self.addEventListener("fetch", function (event) {
     if (event.request.cache === "only-if-cached" && event.request.mode !== "same-origin") {
+        console.log("Failed to add Cross-Origin headers");
       return;
     }
   
