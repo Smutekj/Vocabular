@@ -35,8 +35,6 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 // it with a specific name.
 var ENVIRONMENT_IS_PTHREAD = ENVIRONMENT_IS_WORKER && self.name?.startsWith("em-pthread");
 
-console.log("Running from: ", self.name);
-
 if (ENVIRONMENT_IS_NODE) {
   var worker_threads = require("worker_threads");
   global.Worker = worker_threads.Worker;
@@ -11772,11 +11770,11 @@ var _toggleFullscreen = Module["_toggleFullscreen"] = makeInvalidEarlyAccess("_t
 
 var _disableInput = Module["_disableInput"] = makeInvalidEarlyAccess("_disableInput");
 
-var _free = makeInvalidEarlyAccess("_free");
-
 var _restartGame = Module["_restartGame"] = makeInvalidEarlyAccess("_restartGame");
 
 var _zoomCamera = Module["_zoomCamera"] = makeInvalidEarlyAccess("_zoomCamera");
+
+var _free = makeInvalidEarlyAccess("_free");
 
 var _main = Module["_main"] = makeInvalidEarlyAccess("_main");
 
@@ -11961,9 +11959,9 @@ function assignWasmExports(wasmExports) {
   Module["_setCanvasSize"] = _setCanvasSize = createExportWrapper("setCanvasSize", 2);
   Module["_toggleFullscreen"] = _toggleFullscreen = createExportWrapper("toggleFullscreen", 2);
   Module["_disableInput"] = _disableInput = createExportWrapper("disableInput", 1);
-  _free = createExportWrapper("free", 1);
   Module["_restartGame"] = _restartGame = createExportWrapper("restartGame", 0);
   Module["_zoomCamera"] = _zoomCamera = createExportWrapper("zoomCamera", 1);
+  _free = createExportWrapper("free", 1);
   Module["_main"] = _main = createExportWrapper("__main_argc_argv", 2);
   _malloc = createExportWrapper("malloc", 1);
   _strerror = createExportWrapper("strerror", 1);
@@ -12743,7 +12741,6 @@ function invoke_viiiiiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
 var calledRun;
 
 function callMain(args = []) {
-  console.log("Running main from: ", self.name);
   assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
   assert(typeof onPreRuns === "undefined" || onPreRuns.length == 0, "cannot call main when preRun functions remain to be called");
   var entryFunction = _main;
