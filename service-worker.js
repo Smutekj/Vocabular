@@ -15,11 +15,12 @@ self.addEventListener("fetch", (event) => {
     
     event.respondWith(
         fetch(event.request)
-            .then((response) => {
-                // It seems like we only need to set the headers for index.html
-                // If you want to be on the safe side, comment this out
-                // if (!response.url.includes("index.html")) return response;
-
+        .then((response) => {
+            // It seems like we only need to set the headers for index.html
+            // If you want to be on the safe side, comment this out
+            // if (!response.url.includes("index.html")) return response;
+            
+                console.log("Adding headers to:", response);
 
                 const newHeaders = new Headers(response.headers);
                 newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
