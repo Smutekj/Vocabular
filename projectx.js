@@ -35,6 +35,8 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 // it with a specific name.
 var ENVIRONMENT_IS_PTHREAD = ENVIRONMENT_IS_WORKER && self.name?.startsWith("em-pthread");
 
+console.log("Running from: ", self.name);
+
 if (ENVIRONMENT_IS_NODE) {
   var worker_threads = require("worker_threads");
   global.Worker = worker_threads.Worker;
