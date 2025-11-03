@@ -10888,7 +10888,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  742005: $0 => {
+  750261: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10896,7 +10896,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  742230: () => {
+  750486: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10904,7 +10904,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  742377: () => {
+  750633: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10912,7 +10912,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  742611: $0 => {
+  750867: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10936,11 +10936,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  743163: () => {
+  751419: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  743231: ($0, $1, $2, $3) => {
+  751487: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10982,7 +10982,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  744924: ($0, $1, $2, $3) => {
+  753180: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11014,7 +11014,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  746099: ($0, $1) => {
+  754355: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11033,7 +11033,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  746704: ($0, $1) => {
+  754960: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11047,7 +11047,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  747193: $0 => {
+  755449: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11081,7 +11081,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  748199: ($0, $1, $2) => {
+  756455: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11152,7 +11152,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  749667: ($0, $1, $2, $3, $4) => {
+  757923: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11189,18 +11189,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  750655: $0 => {
+  758911: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  750738: () => {
+  758994: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  750807: () => window.innerWidth,
-  750837: () => window.innerHeight
+  759063: () => window.innerWidth,
+  759093: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11912,6 +11912,7 @@ var wasmImports = {
   /** @export */ glGetUniformLocation: _glGetUniformLocation,
   /** @export */ glLinkProgram: _glLinkProgram,
   /** @export */ glPixelStorei: _glPixelStorei,
+  /** @export */ glReadPixels: _glReadPixels,
   /** @export */ glShaderSource: _glShaderSource,
   /** @export */ glTexImage2D: _glTexImage2D,
   /** @export */ glTexParameteri: _glTexParameteri,
