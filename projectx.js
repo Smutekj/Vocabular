@@ -3778,6 +3778,67 @@ function ___syscall_fstat64(fd, buf) {
   }
 }
 
+var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
+  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
+  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+};
+
+function ___syscall_getdents64(fd, dirp, count) {
+  try {
+    var stream = SYSCALLS.getStreamFromFD(fd);
+    stream.getdents ||= FS.readdir(stream.path);
+    var struct_size = 280;
+    var pos = 0;
+    var off = FS.llseek(stream, 0, 1);
+    var startIdx = Math.floor(off / struct_size);
+    var endIdx = Math.min(stream.getdents.length, startIdx + Math.floor(count / struct_size));
+    for (var idx = startIdx; idx < endIdx; idx++) {
+      var id;
+      var type;
+      var name = stream.getdents[idx];
+      if (name === ".") {
+        id = stream.node.id;
+        type = 4;
+      } else if (name === "..") {
+        var lookup = FS.lookupPath(stream.path, {
+          parent: true
+        });
+        id = lookup.node.id;
+        type = 4;
+      } else {
+        var child;
+        try {
+          child = FS.lookupNode(stream.node, name);
+        } catch (e) {
+          // If the entry is not a directory, file, or symlink, nodefs
+          // lookupNode will raise EINVAL. Skip these and continue.
+          if (e?.errno === 28) {
+            continue;
+          }
+          throw e;
+        }
+        id = child.id;
+        type = FS.isChrdev(child.mode) ? 2 : // DT_CHR, character device.
+        FS.isDir(child.mode) ? 4 : // DT_DIR, directory.
+        FS.isLink(child.mode) ? 10 : // DT_LNK, symbolic link.
+        8;
+      }
+      assert(id);
+      HEAP64[((dirp + pos) >> 3)] = BigInt(id);
+      HEAP64[(((dirp + pos) + (8)) >> 3)] = BigInt((idx + 1) * struct_size);
+      HEAP16[(((dirp + pos) + (16)) >> 1)] = 280;
+      HEAP8[(dirp + pos) + (18)] = type;
+      stringToUTF8(name, dirp + pos + 19, 256);
+      pos += struct_size;
+    }
+    FS.llseek(stream, idx * struct_size, 0);
+    return pos;
+  } catch (e) {
+    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+    return -e.errno;
+  }
+}
+
 function ___syscall_ioctl(fd, op, varargs) {
   SYSCALLS.varargs = varargs;
   try {
@@ -4004,11 +4065,6 @@ function __munmap_js(addr, len, prot, flags, fd, offset) {
     return -e.errno;
   }
 }
-
-var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
-  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
-  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
-};
 
 var __tzset_js = (timezone, daylight, std_name, dst_name) => {
   // TODO: Use (malleable) environment variables instead of system settings.
@@ -10888,7 +10944,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  760853: $0 => {
+  814829: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10896,7 +10952,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  761078: () => {
+  815054: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10904,7 +10960,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  761225: () => {
+  815201: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10912,7 +10968,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  761459: $0 => {
+  815435: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10936,11 +10992,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  762011: () => {
+  815987: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  762079: ($0, $1, $2, $3) => {
+  816055: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10982,7 +11038,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  763772: ($0, $1, $2, $3) => {
+  817748: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11014,7 +11070,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  764947: ($0, $1) => {
+  818923: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11033,7 +11089,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  765552: ($0, $1) => {
+  819528: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11047,7 +11103,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  766041: $0 => {
+  820017: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11081,7 +11137,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  767047: ($0, $1, $2) => {
+  821023: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11152,7 +11208,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  768515: ($0, $1, $2, $3, $4) => {
+  822491: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11189,18 +11245,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  769503: $0 => {
+  823479: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  769586: () => {
+  823562: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  769655: () => window.innerWidth,
-  769685: () => window.innerHeight
+  823631: () => window.innerWidth,
+  823661: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11257,9 +11313,9 @@ var _main = Module["_main"] = makeInvalidEarlyAccess("_main");
 
 var _malloc = makeInvalidEarlyAccess("_malloc");
 
-var _strerror = makeInvalidEarlyAccess("_strerror");
-
 var _fflush = makeInvalidEarlyAccess("_fflush");
+
+var _strerror = makeInvalidEarlyAccess("_strerror");
 
 var _emscripten_stack_get_end = makeInvalidEarlyAccess("_emscripten_stack_get_end");
 
@@ -11307,11 +11363,13 @@ var dynCall_vii = makeInvalidEarlyAccess("dynCall_vii");
 
 var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
+var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
+
 var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
 
 var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
 
-var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
+var dynCall_iijii = makeInvalidEarlyAccess("dynCall_iijii");
 
 var dynCall_iiiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiiii");
 
@@ -11417,8 +11475,8 @@ function assignWasmExports(wasmExports) {
   _free = createExportWrapper("free", 1);
   Module["_main"] = _main = createExportWrapper("__main_argc_argv", 2);
   _malloc = createExportWrapper("malloc", 1);
-  _strerror = createExportWrapper("strerror", 1);
   _fflush = createExportWrapper("fflush", 1);
+  _strerror = createExportWrapper("strerror", 1);
   _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
   _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
   _emscripten_builtin_memalign = createExportWrapper("emscripten_builtin_memalign", 2);
@@ -11442,9 +11500,10 @@ function assignWasmExports(wasmExports) {
   dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["vii"] = dynCall_vii = createExportWrapper("dynCall_vii", 3);
   dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
+  dynCalls["v"] = dynCall_v = createExportWrapper("dynCall_v", 1);
   dynCalls["viii"] = dynCall_viii = createExportWrapper("dynCall_viii", 4);
   dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
-  dynCalls["v"] = dynCall_v = createExportWrapper("dynCall_v", 1);
+  dynCalls["iijii"] = dynCall_iijii = createExportWrapper("dynCall_iijii", 5);
   dynCalls["iiiiiiiii"] = dynCall_iiiiiiiii = createExportWrapper("dynCall_iiiiiiiii", 9);
   dynCalls["iiiiii"] = dynCall_iiiiii = createExportWrapper("dynCall_iiiiii", 6);
   dynCalls["viiiiii"] = dynCall_viiiiii = createExportWrapper("dynCall_viiiiii", 7);
@@ -11506,6 +11565,7 @@ var wasmImports = {
   /** @export */ __resumeException: ___resumeException,
   /** @export */ __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */ __syscall_fstat64: ___syscall_fstat64,
+  /** @export */ __syscall_getdents64: ___syscall_getdents64,
   /** @export */ __syscall_ioctl: ___syscall_ioctl,
   /** @export */ __syscall_lstat64: ___syscall_lstat64,
   /** @export */ __syscall_newfstatat: ___syscall_newfstatat,
@@ -11877,6 +11937,9 @@ var wasmImports = {
   /** @export */ glBindFramebuffer: _glBindFramebuffer,
   /** @export */ glBindTexture: _glBindTexture,
   /** @export */ glBindVertexArray: _glBindVertexArray,
+  /** @export */ glBindVertexArrayOES: _glBindVertexArrayOES,
+  /** @export */ glBlendEquation: _glBlendEquation,
+  /** @export */ glBlendEquationSeparate: _glBlendEquationSeparate,
   /** @export */ glBlendFunc: _glBlendFunc,
   /** @export */ glBlendFuncSeparate: _glBlendFuncSeparate,
   /** @export */ glBufferData: _glBufferData,
@@ -11893,6 +11956,9 @@ var wasmImports = {
   /** @export */ glDeleteShader: _glDeleteShader,
   /** @export */ glDeleteTextures: _glDeleteTextures,
   /** @export */ glDeleteVertexArrays: _glDeleteVertexArrays,
+  /** @export */ glDeleteVertexArraysOES: _glDeleteVertexArraysOES,
+  /** @export */ glDetachShader: _glDetachShader,
+  /** @export */ glDisable: _glDisable,
   /** @export */ glDisableVertexAttribArray: _glDisableVertexAttribArray,
   /** @export */ glDrawElements: _glDrawElements,
   /** @export */ glDrawElementsInstanced: _glDrawElementsInstanced,
@@ -11903,7 +11969,9 @@ var wasmImports = {
   /** @export */ glGenFramebuffers: _glGenFramebuffers,
   /** @export */ glGenTextures: _glGenTextures,
   /** @export */ glGenVertexArrays: _glGenVertexArrays,
+  /** @export */ glGenVertexArraysOES: _glGenVertexArraysOES,
   /** @export */ glGenerateMipmap: _glGenerateMipmap,
+  /** @export */ glGetAttribLocation: _glGetAttribLocation,
   /** @export */ glGetIntegerv: _glGetIntegerv,
   /** @export */ glGetProgramInfoLog: _glGetProgramInfoLog,
   /** @export */ glGetProgramiv: _glGetProgramiv,
@@ -11911,8 +11979,11 @@ var wasmImports = {
   /** @export */ glGetShaderiv: _glGetShaderiv,
   /** @export */ glGetString: _glGetString,
   /** @export */ glGetUniformLocation: _glGetUniformLocation,
+  /** @export */ glIsEnabled: _glIsEnabled,
+  /** @export */ glIsProgram: _glIsProgram,
   /** @export */ glLinkProgram: _glLinkProgram,
   /** @export */ glPixelStorei: _glPixelStorei,
+  /** @export */ glScissor: _glScissor,
   /** @export */ glShaderSource: _glShaderSource,
   /** @export */ glTexImage2D: _glTexImage2D,
   /** @export */ glTexParameteri: _glTexParameteri,
@@ -11948,6 +12019,7 @@ var wasmImports = {
   /** @export */ invoke_vii,
   /** @export */ invoke_viii,
   /** @export */ invoke_viiii,
+  /** @export */ invoke_viiiii,
   /** @export */ invoke_viiiiiii,
   /** @export */ invoke_viiiiiiiiii,
   /** @export */ invoke_viiiiiiiiiiiiiii,
@@ -12029,10 +12101,10 @@ function invoke_j(index) {
   }
 }
 
-function invoke_ii(index, a1) {
+function invoke_vii(index, a1, a2) {
   var sp = stackSave();
   try {
-    return dynCall_ii(index, a1);
+    dynCall_vii(index, a1, a2);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -12040,10 +12112,10 @@ function invoke_ii(index, a1) {
   }
 }
 
-function invoke_vii(index, a1, a2) {
+function invoke_viii(index, a1, a2, a3) {
   var sp = stackSave();
   try {
-    dynCall_vii(index, a1, a2);
+    dynCall_viii(index, a1, a2, a3);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -12062,10 +12134,10 @@ function invoke_vi(index, a1) {
   }
 }
 
-function invoke_iiiiiii(index, a1, a2, a3, a4, a5, a6) {
+function invoke_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7) {
   var sp = stackSave();
   try {
-    return dynCall_iiiiiii(index, a1, a2, a3, a4, a5, a6);
+    dynCall_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -12077,6 +12149,39 @@ function invoke_iiiiii(index, a1, a2, a3, a4, a5) {
   var sp = stackSave();
   try {
     return dynCall_iiiiii(index, a1, a2, a3, a4, a5);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiii(index, a1, a2, a3, a4, a5) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiii(index, a1, a2, a3, a4, a5);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_ii(index, a1) {
+  var sp = stackSave();
+  try {
+    return dynCall_ii(index, a1);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiii(index, a1, a2, a3, a4, a5, a6) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiii(index, a1, a2, a3, a4, a5, a6);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -12099,17 +12204,6 @@ function invoke_iiiiid(index, a1, a2, a3, a4, a5) {
   var sp = stackSave();
   try {
     return dynCall_iiiiid(index, a1, a2, a3, a4, a5);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viii(index, a1, a2, a3) {
-  var sp = stackSave();
-  try {
-    dynCall_viii(index, a1, a2, a3);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -12188,17 +12282,6 @@ function invoke_i(index) {
   var sp = stackSave();
   try {
     return dynCall_i(index);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7) {
-  var sp = stackSave();
-  try {
-    dynCall_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
