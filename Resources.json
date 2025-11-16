@@ -152,20 +152,34 @@
   "Sound":
   {
     "Explosion1":{
-
-        "id": "Explosion1",
         "volume": 100,
         "path": "Sounds/Explosion1.wav"
     },
     "CountTick":{
-        "id": "CountTick",
         "volume": 100,
         "path": "Sounds/CountTick.wav"
     },
     "UpShort":{
-        "id": "UpShort",
         "volume": 100,
         "path": "Sounds/UpShort.wav"
+    },
+    "JumpShort":{
+        "volume": 100,
+        "path": "Sounds/JumpShort.wav"
+    },"WrongWord":{
+        "volume": 100,
+        "path": "Sounds/WrongWord.wav"
+    },
+    "WordCorrect1":{
+        "volume": 100,
+        "path": "Sounds/WordCorrect1.wav"
+    },
+    "WordCorrect2":{
+        "volume": 100,
+        "path": "Sounds/WordCorrect2.wav"
+    },"Kick":{
+        "volume": 100,
+        "path": "Sounds/Kick.wav"
     }
   },
   "Atlas":
