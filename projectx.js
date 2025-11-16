@@ -10944,7 +10944,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  2048493: $0 => {
+  2165141: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10952,7 +10952,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  2048718: () => {
+  2165366: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10960,7 +10960,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2048865: () => {
+  2165513: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10968,7 +10968,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2049099: $0 => {
+  2165747: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10992,11 +10992,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  2049651: () => {
+  2166299: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  2049719: ($0, $1, $2, $3) => {
+  2166367: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11038,7 +11038,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  2051412: ($0, $1, $2, $3) => {
+  2168060: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11070,7 +11070,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  2052587: ($0, $1) => {
+  2169235: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11089,7 +11089,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2053192: ($0, $1) => {
+  2169840: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11103,7 +11103,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2053681: $0 => {
+  2170329: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11137,7 +11137,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  2054687: ($0, $1, $2) => {
+  2171335: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11208,7 +11208,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  2056155: ($0, $1, $2, $3, $4) => {
+  2172803: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11245,18 +11245,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  2057143: $0 => {
+  2173791: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  2057226: () => {
+  2173874: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  2057295: () => window.innerWidth,
-  2057325: () => window.innerHeight
+  2173943: () => window.innerWidth,
+  2173973: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11357,19 +11357,19 @@ var dynCall_vif = makeInvalidEarlyAccess("dynCall_vif");
 
 var dynCall_vi = makeInvalidEarlyAccess("dynCall_vi");
 
-var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
+var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
 
 var dynCall_vii = makeInvalidEarlyAccess("dynCall_vii");
+
+var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
 
 var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
 var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
 
-var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
+var dynCall_iijii = makeInvalidEarlyAccess("dynCall_iijii");
 
 var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
-
-var dynCall_iijii = makeInvalidEarlyAccess("dynCall_iijii");
 
 var dynCall_iiiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiiii");
 
@@ -11457,6 +11457,8 @@ var dynCall_iiiiijj = makeInvalidEarlyAccess("dynCall_iiiiijj");
 
 var dynCall_iiiiiijj = makeInvalidEarlyAccess("dynCall_iiiiiijj");
 
+var dynCall_jii = makeInvalidEarlyAccess("dynCall_jii");
+
 var _asyncify_start_unwind = makeInvalidEarlyAccess("_asyncify_start_unwind");
 
 var _asyncify_stop_unwind = makeInvalidEarlyAccess("_asyncify_stop_unwind");
@@ -11497,13 +11499,13 @@ function assignWasmExports(wasmExports) {
   dynCalls["vifi"] = dynCall_vifi = createExportWrapper("dynCall_vifi", 4);
   dynCalls["vif"] = dynCall_vif = createExportWrapper("dynCall_vif", 3);
   dynCalls["vi"] = dynCall_vi = createExportWrapper("dynCall_vi", 2);
-  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
+  dynCalls["viii"] = dynCall_viii = createExportWrapper("dynCall_viii", 4);
   dynCalls["vii"] = dynCall_vii = createExportWrapper("dynCall_vii", 3);
+  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
   dynCalls["v"] = dynCall_v = createExportWrapper("dynCall_v", 1);
-  dynCalls["viii"] = dynCall_viii = createExportWrapper("dynCall_viii", 4);
-  dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
   dynCalls["iijii"] = dynCall_iijii = createExportWrapper("dynCall_iijii", 5);
+  dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
   dynCalls["iiiiiiiii"] = dynCall_iiiiiiiii = createExportWrapper("dynCall_iiiiiiiii", 9);
   dynCalls["iiiiii"] = dynCall_iiiiii = createExportWrapper("dynCall_iiiiii", 6);
   dynCalls["viiiiii"] = dynCall_viiiiii = createExportWrapper("dynCall_viiiiii", 7);
@@ -11547,6 +11549,7 @@ function assignWasmExports(wasmExports) {
   dynCalls["viiiiiiiiiiiiiii"] = dynCall_viiiiiiiiiiiiiii = createExportWrapper("dynCall_viiiiiiiiiiiiiii", 16);
   dynCalls["iiiiijj"] = dynCall_iiiiijj = createExportWrapper("dynCall_iiiiijj", 7);
   dynCalls["iiiiiijj"] = dynCall_iiiiiijj = createExportWrapper("dynCall_iiiiiijj", 8);
+  dynCalls["jii"] = dynCall_jii = createExportWrapper("dynCall_jii", 3);
   _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
   _asyncify_stop_unwind = createExportWrapper("asyncify_stop_unwind", 0);
   _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
@@ -12013,6 +12016,7 @@ var wasmImports = {
   /** @export */ invoke_iiiiiiiiiiiii,
   /** @export */ invoke_iiiiij,
   /** @export */ invoke_j,
+  /** @export */ invoke_jii,
   /** @export */ invoke_jiiii,
   /** @export */ invoke_v,
   /** @export */ invoke_vi,
@@ -12319,6 +12323,18 @@ function invoke_viiiiiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
     _setThrew(1, 0);
+  }
+}
+
+function invoke_jii(index, a1, a2) {
+  var sp = stackSave();
+  try {
+    return dynCall_jii(index, a1, a2);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+    return 0n;
   }
 }
 
