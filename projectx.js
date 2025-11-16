@@ -10944,15 +10944,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  2164725: $0 => {
-    console.log($0);
-    var buf = Module.soundBuffers[$0];
-    var src = Module.sfxCtx.createBufferSource();
-    src.buffer = buf;
-    src.connect(Module.sfxCtx.destination);
-    src.start();
-  },
-  2164898: $0 => {
+  2164967: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10960,7 +10952,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  2165123: () => {
+  2165192: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10968,7 +10960,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2165270: () => {
+  2165339: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10976,7 +10968,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2165504: $0 => {
+  2165573: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -11000,11 +10992,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  2166056: () => {
+  2166125: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  2166124: ($0, $1, $2, $3) => {
+  2166193: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11046,7 +11038,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  2167817: ($0, $1, $2, $3) => {
+  2167886: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11078,7 +11070,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  2168992: ($0, $1) => {
+  2169061: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11097,7 +11089,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2169597: ($0, $1) => {
+  2169666: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11111,7 +11103,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2170086: $0 => {
+  2170155: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11145,7 +11137,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  2171092: ($0, $1, $2) => {
+  2171161: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11216,7 +11208,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  2172560: ($0, $1, $2, $3, $4) => {
+  2172629: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11253,18 +11245,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  2173548: $0 => {
+  2173617: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  2173631: () => {
+  2173700: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  2173700: () => window.innerWidth,
-  2173730: () => window.innerHeight
+  2173769: () => window.innerWidth,
+  2173799: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11292,6 +11284,15 @@ function loadFromStorage(key) {
   var stringOnWasmHeap = _malloc(lengthBytes);
   stringToUTF8(val, stringOnWasmHeap, lengthBytes);
   return stringOnWasmHeap;
+}
+
+function playBuffer2(buffer_id) {
+  console.log(UTF8ToString(buffer_id));
+  var buf = Module.soundBuffers[UTF8ToString(buffer_id)];
+  var src = Module.sfxCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(Module.sfxCtx.destination);
+  src.start();
 }
 
 function getWindowWidth() {
@@ -12037,6 +12038,7 @@ var wasmImports = {
   /** @export */ invoke_viiiiiiiiiiiiiii,
   /** @export */ loadFromStorage,
   /** @export */ pauseGame,
+  /** @export */ playBuffer2,
   /** @export */ setAssetsLoaded,
   /** @export */ setupDeviceOrientation,
   /** @export */ updateLoadingProgress
