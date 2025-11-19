@@ -180,6 +180,9 @@
     },"Kick":{
         "volume": 100,
         "path": "Sounds/Kick.wav"
+    },"LevelCompleted1":{
+        "volume": 100,
+        "path": "Sounds/LevelCompleted1.wav"
     }
   },
   "Atlas":
