@@ -10944,7 +10944,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  2308867: $0 => {
+  2339507: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10952,7 +10952,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  2309092: () => {
+  2339732: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10960,7 +10960,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2309239: () => {
+  2339879: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10968,7 +10968,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2309473: $0 => {
+  2340113: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10992,11 +10992,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  2310025: () => {
+  2340665: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  2310093: ($0, $1, $2, $3) => {
+  2340733: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11038,7 +11038,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  2311786: ($0, $1, $2, $3) => {
+  2342426: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11070,7 +11070,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  2312961: ($0, $1) => {
+  2343601: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11089,7 +11089,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2313566: ($0, $1) => {
+  2344206: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11103,7 +11103,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2314055: $0 => {
+  2344695: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11137,7 +11137,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  2315061: ($0, $1, $2) => {
+  2345701: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11208,7 +11208,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  2316529: ($0, $1, $2, $3, $4) => {
+  2347169: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11245,18 +11245,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  2317517: $0 => {
+  2348157: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  2317600: () => {
+  2348240: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  2317669: () => window.innerWidth,
-  2317699: () => window.innerHeight
+  2348309: () => window.innerWidth,
+  2348339: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11393,9 +11393,15 @@ var dynCall_iiiiii = makeInvalidEarlyAccess("dynCall_iiiiii");
 
 var dynCall_viiiiii = makeInvalidEarlyAccess("dynCall_viiiiii");
 
+var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
+
 var dynCall_iiiii = makeInvalidEarlyAccess("dynCall_iiiii");
 
-var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
+var dynCall_ji = makeInvalidEarlyAccess("dynCall_ji");
+
+var dynCall_jiji = makeInvalidEarlyAccess("dynCall_jiji");
+
+var dynCall_i = makeInvalidEarlyAccess("dynCall_i");
 
 var dynCall_iiiiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiiiii");
 
@@ -11407,15 +11413,9 @@ var dynCall_iiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiii");
 
 var dynCall_iiji = makeInvalidEarlyAccess("dynCall_iiji");
 
-var dynCall_i = makeInvalidEarlyAccess("dynCall_i");
-
 var dynCall_iid = makeInvalidEarlyAccess("dynCall_iid");
 
 var dynCall_di = makeInvalidEarlyAccess("dynCall_di");
-
-var dynCall_ji = makeInvalidEarlyAccess("dynCall_ji");
-
-var dynCall_jiji = makeInvalidEarlyAccess("dynCall_jiji");
 
 var dynCall_vffff = makeInvalidEarlyAccess("dynCall_vffff");
 
@@ -11475,6 +11475,8 @@ var dynCall_iiiiiijj = makeInvalidEarlyAccess("dynCall_iiiiiijj");
 
 var dynCall_jii = makeInvalidEarlyAccess("dynCall_jii");
 
+var dynCall_viid = makeInvalidEarlyAccess("dynCall_viid");
+
 var _asyncify_start_unwind = makeInvalidEarlyAccess("_asyncify_start_unwind");
 
 var _asyncify_stop_unwind = makeInvalidEarlyAccess("_asyncify_stop_unwind");
@@ -11525,18 +11527,18 @@ function assignWasmExports(wasmExports) {
   dynCalls["iiiiiiiii"] = dynCall_iiiiiiiii = createExportWrapper("dynCall_iiiiiiiii", 9);
   dynCalls["iiiiii"] = dynCall_iiiiii = createExportWrapper("dynCall_iiiiii", 6);
   dynCalls["viiiiii"] = dynCall_viiiiii = createExportWrapper("dynCall_viiiiii", 7);
-  dynCalls["iiiii"] = dynCall_iiiii = createExportWrapper("dynCall_iiiii", 5);
   dynCalls["viiiii"] = dynCall_viiiii = createExportWrapper("dynCall_viiiii", 6);
+  dynCalls["iiiii"] = dynCall_iiiii = createExportWrapper("dynCall_iiiii", 5);
+  dynCalls["ji"] = dynCall_ji = createExportWrapper("dynCall_ji", 2);
+  dynCalls["jiji"] = dynCall_jiji = createExportWrapper("dynCall_jiji", 4);
+  dynCalls["i"] = dynCall_i = createExportWrapper("dynCall_i", 1);
   dynCalls["iiiiiiiiii"] = dynCall_iiiiiiiiii = createExportWrapper("dynCall_iiiiiiiiii", 10);
   dynCalls["viiiiiiii"] = dynCall_viiiiiiii = createExportWrapper("dynCall_viiiiiiii", 9);
   dynCalls["iiiiiii"] = dynCall_iiiiiii = createExportWrapper("dynCall_iiiiiii", 7);
   dynCalls["iiiiiiii"] = dynCall_iiiiiiii = createExportWrapper("dynCall_iiiiiiii", 8);
   dynCalls["iiji"] = dynCall_iiji = createExportWrapper("dynCall_iiji", 4);
-  dynCalls["i"] = dynCall_i = createExportWrapper("dynCall_i", 1);
   dynCalls["iid"] = dynCall_iid = createExportWrapper("dynCall_iid", 3);
   dynCalls["di"] = dynCall_di = createExportWrapper("dynCall_di", 2);
-  dynCalls["ji"] = dynCall_ji = createExportWrapper("dynCall_ji", 2);
-  dynCalls["jiji"] = dynCall_jiji = createExportWrapper("dynCall_jiji", 4);
   dynCalls["vffff"] = dynCall_vffff = createExportWrapper("dynCall_vffff", 5);
   dynCalls["vf"] = dynCall_vf = createExportWrapper("dynCall_vf", 2);
   dynCalls["viiiiiiiii"] = dynCall_viiiiiiiii = createExportWrapper("dynCall_viiiiiiiii", 10);
@@ -11566,6 +11568,7 @@ function assignWasmExports(wasmExports) {
   dynCalls["iiiiijj"] = dynCall_iiiiijj = createExportWrapper("dynCall_iiiiijj", 7);
   dynCalls["iiiiiijj"] = dynCall_iiiiiijj = createExportWrapper("dynCall_iiiiiijj", 8);
   dynCalls["jii"] = dynCall_jii = createExportWrapper("dynCall_jii", 3);
+  dynCalls["viid"] = dynCall_viid = createExportWrapper("dynCall_viid", 4);
   _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
   _asyncify_stop_unwind = createExportWrapper("asyncify_stop_unwind", 0);
   _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
@@ -11961,12 +11964,14 @@ var wasmImports = {
   /** @export */ glBlendEquationSeparate: _glBlendEquationSeparate,
   /** @export */ glBlendFunc: _glBlendFunc,
   /** @export */ glBlendFuncSeparate: _glBlendFuncSeparate,
+  /** @export */ glBlitFramebuffer: _glBlitFramebuffer,
   /** @export */ glBufferData: _glBufferData,
   /** @export */ glBufferSubData: _glBufferSubData,
   /** @export */ glCheckFramebufferStatus: _glCheckFramebufferStatus,
   /** @export */ glClear: _glClear,
   /** @export */ glClearColor: _glClearColor,
   /** @export */ glCompileShader: _glCompileShader,
+  /** @export */ glCopyTexImage2D: _glCopyTexImage2D,
   /** @export */ glCreateProgram: _glCreateProgram,
   /** @export */ glCreateShader: _glCreateShader,
   /** @export */ glDeleteBuffers: _glDeleteBuffers,
@@ -12037,6 +12042,7 @@ var wasmImports = {
   /** @export */ invoke_v,
   /** @export */ invoke_vi,
   /** @export */ invoke_vii,
+  /** @export */ invoke_viid,
   /** @export */ invoke_viii,
   /** @export */ invoke_viiii,
   /** @export */ invoke_viiiii,
@@ -12353,6 +12359,17 @@ function invoke_jii(index, a1, a2) {
     if (!(e instanceof EmscriptenEH)) throw e;
     _setThrew(1, 0);
     return 0n;
+  }
+}
+
+function invoke_viid(index, a1, a2, a3) {
+  var sp = stackSave();
+  try {
+    dynCall_viid(index, a1, a2, a3);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
   }
 }
 
