@@ -145,15 +145,31 @@
   {
     "Tahoma":{
         "id": "Tahoma",
-        "size": 25,
+        "size": 20,
         "path":"Fonts/Tahoma.ttf" 
     }    
   },
   "Sound":
   {
+    "ElectroShock1":{
+        "volume": 100,
+        "path": "Sounds/ElectroShock1.wav"
+    },
+    "EnergyShot1":{
+      "volume": 100,
+      "path": "Sounds/EnergyShot1.wav"
+    },
+    "EnergyShot2":{
+      "volume": 100,
+      "path": "Sounds/EnergyShot2.wav"
+    },
     "Explosion1":{
         "volume": 100,
         "path": "Sounds/Explosion1.wav"
+    },
+    "Explosion2":{
+      "volume": 100,
+      "path": "Sounds/Explosion2.wav"
     },
     "CountTick":{
         "volume": 100,
