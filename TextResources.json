@@ -1,0 +1,19 @@
+{
+    "Jump": {
+        "ControlsPC": "Move with WASD, jump with SPACE.",
+        "ControlsMobile": "Move by pushing arrows, jump by clicking the right side of the screen",
+        "Intro": "Jump as high as you can before time runs out! You can only jump on words, that are correctly translated.",
+        "Lives": "Lives",
+        "Correct": "Correct"
+    },
+    "Castle": {
+        "ControlsPC": "Move with WASD, jump with SPACE.",
+        "ControlsMobile": "Move by pushing arrows, jump by clicking the right side of the screen",
+        "Intro": "Move throught the castle while collecting correctly translated word pairs."
+    },
+    "Dodge": {
+        "ControlsPC": "Move with WASD, jump with SPACE.",
+        "ControlsMobile": "Move by pushing arrows, jump by clicking the right side of the screen",
+        "Intro": "Catch all correctly trasnalted word pairs. If you hit an incorrectly translated word, you lose a life!"
+    }
+}

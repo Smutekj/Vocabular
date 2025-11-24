@@ -13,7 +13,6 @@
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
 var Module = typeof Module != "undefined" ? Module : {};
-
 // Determine the runtime environment we are in. You can customize this by
 // setting the ENVIRONMENT setting at compile time (see settings.js).
 // Attempt to auto-detect the environment
@@ -10944,7 +10943,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  2339491: $0 => {
+  2394131: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10952,7 +10951,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  2339716: () => {
+  2394356: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10960,7 +10959,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2339863: () => {
+  2394503: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10968,7 +10967,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2340097: $0 => {
+  2394737: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10992,11 +10991,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  2340649: () => {
+  2395289: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  2340717: ($0, $1, $2, $3) => {
+  2395357: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11038,7 +11037,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  2342410: ($0, $1, $2, $3) => {
+  2397050: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11070,7 +11069,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  2343585: ($0, $1) => {
+  2398225: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11089,7 +11088,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2344190: ($0, $1) => {
+  2398830: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11103,7 +11102,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2344679: $0 => {
+  2399319: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11137,7 +11136,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  2345685: ($0, $1, $2) => {
+  2400325: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11208,7 +11207,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  2347153: ($0, $1, $2, $3, $4) => {
+  2401793: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11245,18 +11244,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  2348141: $0 => {
+  2402781: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  2348224: () => {
+  2402864: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  2348293: () => window.innerWidth,
-  2348323: () => window.innerHeight
+  2402933: () => window.innerWidth,
+  2402963: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11312,6 +11311,8 @@ function getWindowHeight() {
 
 // Imports from the Wasm binary.
 var _assetsLoaded = Module["_assetsLoaded"] = makeInvalidEarlyAccess("_assetsLoaded");
+
+var _startGame = Module["_startGame"] = makeInvalidEarlyAccess("_startGame");
 
 var _setCanvasSize = Module["_setCanvasSize"] = makeInvalidEarlyAccess("_setCanvasSize");
 
@@ -11375,9 +11376,9 @@ var dynCall_vi = makeInvalidEarlyAccess("dynCall_vi");
 
 var dynCall_vii = makeInvalidEarlyAccess("dynCall_vii");
 
-var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
-
 var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
+
+var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
 
 var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
@@ -11475,8 +11476,6 @@ var dynCall_iiiiiijj = makeInvalidEarlyAccess("dynCall_iiiiiijj");
 
 var dynCall_jii = makeInvalidEarlyAccess("dynCall_jii");
 
-var dynCall_viid = makeInvalidEarlyAccess("dynCall_viid");
-
 var _asyncify_start_unwind = makeInvalidEarlyAccess("_asyncify_start_unwind");
 
 var _asyncify_stop_unwind = makeInvalidEarlyAccess("_asyncify_stop_unwind");
@@ -11487,6 +11486,7 @@ var _asyncify_stop_rewind = makeInvalidEarlyAccess("_asyncify_stop_rewind");
 
 function assignWasmExports(wasmExports) {
   Module["_assetsLoaded"] = _assetsLoaded = createExportWrapper("assetsLoaded", 0);
+  Module["_startGame"] = _startGame = createExportWrapper("startGame", 1);
   Module["_setCanvasSize"] = _setCanvasSize = createExportWrapper("setCanvasSize", 2);
   Module["_toggleFullscreen"] = _toggleFullscreen = createExportWrapper("toggleFullscreen", 2);
   Module["_disableInput"] = _disableInput = createExportWrapper("disableInput", 1);
@@ -11518,8 +11518,8 @@ function assignWasmExports(wasmExports) {
   dynCalls["vif"] = dynCall_vif = createExportWrapper("dynCall_vif", 3);
   dynCalls["vi"] = dynCall_vi = createExportWrapper("dynCall_vi", 2);
   dynCalls["vii"] = dynCall_vii = createExportWrapper("dynCall_vii", 3);
-  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["viii"] = dynCall_viii = createExportWrapper("dynCall_viii", 4);
+  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
   dynCalls["v"] = dynCall_v = createExportWrapper("dynCall_v", 1);
   dynCalls["iijii"] = dynCall_iijii = createExportWrapper("dynCall_iijii", 5);
@@ -11568,7 +11568,6 @@ function assignWasmExports(wasmExports) {
   dynCalls["iiiiijj"] = dynCall_iiiiijj = createExportWrapper("dynCall_iiiiijj", 7);
   dynCalls["iiiiiijj"] = dynCall_iiiiiijj = createExportWrapper("dynCall_iiiiiijj", 8);
   dynCalls["jii"] = dynCall_jii = createExportWrapper("dynCall_jii", 3);
-  dynCalls["viid"] = dynCall_viid = createExportWrapper("dynCall_viid", 4);
   _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
   _asyncify_stop_unwind = createExportWrapper("asyncify_stop_unwind", 0);
   _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
@@ -11984,6 +11983,7 @@ var wasmImports = {
   /** @export */ glDetachShader: _glDetachShader,
   /** @export */ glDisable: _glDisable,
   /** @export */ glDisableVertexAttribArray: _glDisableVertexAttribArray,
+  /** @export */ glDrawArraysInstanced: _glDrawArraysInstanced,
   /** @export */ glDrawElements: _glDrawElements,
   /** @export */ glDrawElementsInstanced: _glDrawElementsInstanced,
   /** @export */ glEnable: _glEnable,
@@ -12019,6 +12019,7 @@ var wasmImports = {
   /** @export */ glUniformMatrix4fv: _glUniformMatrix4fv,
   /** @export */ glUseProgram: _glUseProgram,
   /** @export */ glVertexAttribDivisor: _glVertexAttribDivisor,
+  /** @export */ glVertexAttribIPointer: _glVertexAttribIPointer,
   /** @export */ glVertexAttribPointer: _glVertexAttribPointer,
   /** @export */ glViewport: _glViewport,
   /** @export */ invoke_diii,
@@ -12042,7 +12043,6 @@ var wasmImports = {
   /** @export */ invoke_v,
   /** @export */ invoke_vi,
   /** @export */ invoke_vii,
-  /** @export */ invoke_viid,
   /** @export */ invoke_viii,
   /** @export */ invoke_viiii,
   /** @export */ invoke_viiiii,
@@ -12359,17 +12359,6 @@ function invoke_jii(index, a1, a2) {
     if (!(e instanceof EmscriptenEH)) throw e;
     _setThrew(1, 0);
     return 0n;
-  }
-}
-
-function invoke_viid(index, a1, a2, a3) {
-  var sp = stackSave();
-  try {
-    dynCall_viid(index, a1, a2, a3);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
   }
 }
 
