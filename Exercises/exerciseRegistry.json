@@ -1,0 +1,34 @@
+[
+    {
+        "name":{
+            "cz": "Přídavná Jména",
+            "en": "Adjectives",
+            "de": "Adjektive"
+        },
+        "url": "Adjectives.csv"
+    }, 
+    {
+        "name":{
+            "cz": "Ovoce a Zelenina",
+            "en": "Fruits And Vegetables",
+            "de": "Obst und Gemüse"
+        },
+        "url": "FruitsAndVegetables.csv"
+    },
+    {
+        "name":{
+            "cz": "Oblečení",
+            "en": "Clothing",
+            "de": "Kleidung"
+        },
+        "url": "Kleidung.csv"
+    },
+    {
+        "name":{
+            "cz": "Nářadí",
+            "en": "Hand Tools",
+            "de": "Werkzeug"
+        },
+        "url": "Werkzeug.csv"
+    }
+]
