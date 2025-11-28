@@ -31,8 +31,8 @@ Noun,Květák,der Blumenkohl,cauliflower
 Noun,Brokolice,der Brokkoli,broccoli
 Noun,Kedluben,der Kohlrabi,kohlrabi
 Noun,Zelí,der Kohl,cabbage
-Noun,Hrášek,die Erbse,pea
-Noun,Fazol,die Bohne,bean
+Noun,Hrášek,die Erbse,peas
+Noun,Fazole,die Bohne,beans
 Noun,Kukuřice,der Mais,corn
 Noun,Rýže,der Reis,rice
 Noun,Řepa,die Rübe,beetroot
@@ -40,3 +40,9 @@ Noun,Dýně,der Kürbis,pumpkin
 Noun,Chřest,der Spargel,asparagus
 Noun,Pórek,der Lauch,leek
 Noun,Křen,der Meerrettich,horseradish
+Noun,Avokádo,die Avocado,avocado
+Noun,Houba,der Pilz,mushroom
+Noun,Lilek,die Aubergine,eggplant
+Noun,Hlávkový salát,der Kopfsalat,lettuce
+Noun,Kokos,der Kokosnuss,coconut
+Noun,vlašský ořech,der Walnuss,walnut
