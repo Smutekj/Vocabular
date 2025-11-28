@@ -4138,67 +4138,6 @@ function ___syscall_fstat64(fd, buf) {
   }
 }
 
-var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
-  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
-  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
-};
-
-function ___syscall_getdents64(fd, dirp, count) {
-  try {
-    var stream = SYSCALLS.getStreamFromFD(fd);
-    stream.getdents ||= FS.readdir(stream.path);
-    var struct_size = 280;
-    var pos = 0;
-    var off = FS.llseek(stream, 0, 1);
-    var startIdx = Math.floor(off / struct_size);
-    var endIdx = Math.min(stream.getdents.length, startIdx + Math.floor(count / struct_size));
-    for (var idx = startIdx; idx < endIdx; idx++) {
-      var id;
-      var type;
-      var name = stream.getdents[idx];
-      if (name === ".") {
-        id = stream.node.id;
-        type = 4;
-      } else if (name === "..") {
-        var lookup = FS.lookupPath(stream.path, {
-          parent: true
-        });
-        id = lookup.node.id;
-        type = 4;
-      } else {
-        var child;
-        try {
-          child = FS.lookupNode(stream.node, name);
-        } catch (e) {
-          // If the entry is not a directory, file, or symlink, nodefs
-          // lookupNode will raise EINVAL. Skip these and continue.
-          if (e?.errno === 28) {
-            continue;
-          }
-          throw e;
-        }
-        id = child.id;
-        type = FS.isChrdev(child.mode) ? 2 : // DT_CHR, character device.
-        FS.isDir(child.mode) ? 4 : // DT_DIR, directory.
-        FS.isLink(child.mode) ? 10 : // DT_LNK, symbolic link.
-        8;
-      }
-      assert(id);
-      HEAP64[((dirp + pos) >> 3)] = BigInt(id);
-      HEAP64[(((dirp + pos) + (8)) >> 3)] = BigInt((idx + 1) * struct_size);
-      HEAP16[(((dirp + pos) + (16)) >> 1)] = 280;
-      HEAP8[(dirp + pos) + (18)] = type;
-      stringToUTF8(name, dirp + pos + 19, 256);
-      pos += struct_size;
-    }
-    FS.llseek(stream, idx * struct_size, 0);
-    return pos;
-  } catch (e) {
-    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
-    return -e.errno;
-  }
-}
-
 function ___syscall_ioctl(fd, op, varargs) {
   SYSCALLS.varargs = varargs;
   try {
@@ -4425,6 +4364,11 @@ function __munmap_js(addr, len, prot, flags, fd, offset) {
     return -e.errno;
   }
 }
+
+var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
+  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
+  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+};
 
 var __tzset_js = (timezone, daylight, std_name, dst_name) => {
   // TODO: Use (malleable) environment variables instead of system settings.
@@ -11304,7 +11248,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  2416654: $0 => {
+  2375406: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -11312,7 +11256,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  2416879: () => {
+  2375631: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -11320,7 +11264,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2417026: () => {
+  2375778: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -11328,7 +11272,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  2417260: $0 => {
+  2376012: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -11352,11 +11296,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  2417812: () => {
+  2376564: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  2417880: ($0, $1, $2, $3) => {
+  2376632: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11398,7 +11342,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  2419573: ($0, $1, $2, $3) => {
+  2378325: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11430,7 +11374,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  2420748: ($0, $1) => {
+  2379500: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11449,7 +11393,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2421353: ($0, $1) => {
+  2380105: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11463,7 +11407,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  2421842: $0 => {
+  2380594: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11497,7 +11441,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  2422848: ($0, $1, $2) => {
+  2381600: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11568,7 +11512,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  2424316: ($0, $1, $2, $3, $4) => {
+  2383068: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11605,18 +11549,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  2425304: $0 => {
+  2384056: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  2425387: () => {
+  2384139: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  2425456: () => window.innerWidth,
-  2425486: () => window.innerHeight
+  2384208: () => window.innerWidth,
+  2384238: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11745,15 +11689,13 @@ var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
 var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
 
-var dynCall_iijii = makeInvalidEarlyAccess("dynCall_iijii");
-
-var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
-
 var dynCall_iiiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiiii");
 
 var dynCall_iiiiii = makeInvalidEarlyAccess("dynCall_iiiiii");
 
 var dynCall_viiiiii = makeInvalidEarlyAccess("dynCall_viiiiii");
+
+var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
 
 var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
 
@@ -11881,11 +11823,10 @@ function assignWasmExports(wasmExports) {
   dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
   dynCalls["v"] = dynCall_v = createExportWrapper("dynCall_v", 1);
-  dynCalls["iijii"] = dynCall_iijii = createExportWrapper("dynCall_iijii", 5);
-  dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
   dynCalls["iiiiiiiii"] = dynCall_iiiiiiiii = createExportWrapper("dynCall_iiiiiiiii", 9);
   dynCalls["iiiiii"] = dynCall_iiiiii = createExportWrapper("dynCall_iiiiii", 6);
   dynCalls["viiiiii"] = dynCall_viiiiii = createExportWrapper("dynCall_viiiiii", 7);
+  dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
   dynCalls["viiiii"] = dynCall_viiiii = createExportWrapper("dynCall_viiiii", 6);
   dynCalls["iiiii"] = dynCall_iiiii = createExportWrapper("dynCall_iiiii", 5);
   dynCalls["ji"] = dynCall_ji = createExportWrapper("dynCall_ji", 2);
@@ -11944,7 +11885,6 @@ var wasmImports = {
   /** @export */ __resumeException: ___resumeException,
   /** @export */ __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */ __syscall_fstat64: ___syscall_fstat64,
-  /** @export */ __syscall_getdents64: ___syscall_getdents64,
   /** @export */ __syscall_ioctl: ___syscall_ioctl,
   /** @export */ __syscall_lstat64: ___syscall_lstat64,
   /** @export */ __syscall_newfstatat: ___syscall_newfstatat,
@@ -12316,19 +12256,14 @@ var wasmImports = {
   /** @export */ glBindFramebuffer: _glBindFramebuffer,
   /** @export */ glBindTexture: _glBindTexture,
   /** @export */ glBindVertexArray: _glBindVertexArray,
-  /** @export */ glBindVertexArrayOES: _glBindVertexArrayOES,
-  /** @export */ glBlendEquation: _glBlendEquation,
-  /** @export */ glBlendEquationSeparate: _glBlendEquationSeparate,
   /** @export */ glBlendFunc: _glBlendFunc,
   /** @export */ glBlendFuncSeparate: _glBlendFuncSeparate,
-  /** @export */ glBlitFramebuffer: _glBlitFramebuffer,
   /** @export */ glBufferData: _glBufferData,
   /** @export */ glBufferSubData: _glBufferSubData,
   /** @export */ glCheckFramebufferStatus: _glCheckFramebufferStatus,
   /** @export */ glClear: _glClear,
   /** @export */ glClearColor: _glClearColor,
   /** @export */ glCompileShader: _glCompileShader,
-  /** @export */ glCopyTexImage2D: _glCopyTexImage2D,
   /** @export */ glCreateProgram: _glCreateProgram,
   /** @export */ glCreateShader: _glCreateShader,
   /** @export */ glDeleteBuffers: _glDeleteBuffers,
@@ -12337,9 +12272,6 @@ var wasmImports = {
   /** @export */ glDeleteShader: _glDeleteShader,
   /** @export */ glDeleteTextures: _glDeleteTextures,
   /** @export */ glDeleteVertexArrays: _glDeleteVertexArrays,
-  /** @export */ glDeleteVertexArraysOES: _glDeleteVertexArraysOES,
-  /** @export */ glDetachShader: _glDetachShader,
-  /** @export */ glDisable: _glDisable,
   /** @export */ glDisableVertexAttribArray: _glDisableVertexAttribArray,
   /** @export */ glDrawArraysInstanced: _glDrawArraysInstanced,
   /** @export */ glDrawElements: _glDrawElements,
@@ -12351,9 +12283,7 @@ var wasmImports = {
   /** @export */ glGenFramebuffers: _glGenFramebuffers,
   /** @export */ glGenTextures: _glGenTextures,
   /** @export */ glGenVertexArrays: _glGenVertexArrays,
-  /** @export */ glGenVertexArraysOES: _glGenVertexArraysOES,
   /** @export */ glGenerateMipmap: _glGenerateMipmap,
-  /** @export */ glGetAttribLocation: _glGetAttribLocation,
   /** @export */ glGetIntegerv: _glGetIntegerv,
   /** @export */ glGetProgramInfoLog: _glGetProgramInfoLog,
   /** @export */ glGetProgramiv: _glGetProgramiv,
@@ -12361,11 +12291,8 @@ var wasmImports = {
   /** @export */ glGetShaderiv: _glGetShaderiv,
   /** @export */ glGetString: _glGetString,
   /** @export */ glGetUniformLocation: _glGetUniformLocation,
-  /** @export */ glIsEnabled: _glIsEnabled,
-  /** @export */ glIsProgram: _glIsProgram,
   /** @export */ glLinkProgram: _glLinkProgram,
   /** @export */ glPixelStorei: _glPixelStorei,
-  /** @export */ glScissor: _glScissor,
   /** @export */ glShaderSource: _glShaderSource,
   /** @export */ glTexImage2D: _glTexImage2D,
   /** @export */ glTexParameteri: _glTexParameteri,
@@ -12402,7 +12329,6 @@ var wasmImports = {
   /** @export */ invoke_vii,
   /** @export */ invoke_viii,
   /** @export */ invoke_viiii,
-  /** @export */ invoke_viiiii,
   /** @export */ invoke_viiiiiii,
   /** @export */ invoke_viiiiiiiiii,
   /** @export */ invoke_viiiiiiiiiiiiiii,
@@ -12534,17 +12460,6 @@ function invoke_iiiiii(index, a1, a2, a3, a4, a5) {
   var sp = stackSave();
   try {
     return dynCall_iiiiii(index, a1, a2, a3, a4, a5);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiiii(index, a1, a2, a3, a4, a5) {
-  var sp = stackSave();
-  try {
-    dynCall_viiiii(index, a1, a2, a3, a4, a5);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
