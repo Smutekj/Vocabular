@@ -10984,7 +10984,7 @@ var Asyncify = {
     Disabled: 3
   },
   state: 0,
-  StackSize: 4096,
+  StackSize: 65536,
   currData: null,
   handleSleepReturnValue: 0,
   exportCallStack: [],
