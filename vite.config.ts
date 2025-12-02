@@ -1,18 +1,38 @@
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/Vocabular/',   // 👈 important
+  base: '/Vocabular/',   // 
+  build: {
+    sourcemap: true, // for production
+    minify: "esbuild"
+  },
+  server: {
+    sourcemapIgnoreList: false, // optional, helps mapping on mobile
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  // assetsInclude: ['**/*.js', '**/*.wasm'],
   plugins: [
-    react(),
+    tailwindcss(),
+    react(
+      {
+        babel: {
+          plugins: ['babel-plugin-react-compiler'],
+        }
+      }
+    ),
     VitePWA({
       registerType: "autoUpdate", // automatically updates service worker
       includeAssets: [
-          "Icons/*.png", "Images/*.png",
-         "*.csv",
-          "projectx.js",  "service-worker.js"],
+        "Icons/*.png", "Images/*.png",
+        "*.csv",
+        "projectx.js", "gameLoader.js", "service-worker.js"],
       manifest: {
         name: "Vocabulary Learning Game App",
         short_name: "Vocabular",
@@ -70,7 +90,7 @@ export default defineConfig({
             options: {
               cacheName: "wasm-cache",
               expiration: {
-                maxEntries: 10,
+                // maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },

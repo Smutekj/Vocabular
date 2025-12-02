@@ -1,6 +1,7 @@
-import './App.css'
+import './style/Exercise.css'
 
-export type ExcerciseLine = {
+export type ExerciseLine = {
+    meaning_id: string;
     correct_word: string;
     translation: string;
     image_src: string | null;
@@ -15,13 +16,21 @@ const AnswerStatus = {
 export type AnswerStatus = typeof AnswerStatus[keyof typeof AnswerStatus];
 
 type LineProps = {
-    line_text: ExcerciseLine;
+    line_text: ExerciseLine;
     status: AnswerStatus;
     style: any;
     focused: boolean;
 };
 
 function LineExercise({ line_text, status, style, focused }: LineProps) {
+
+    const inputClass = "block mx-auto \
+                        min-w-0 grow bg-gray-900 py-1.5 pr-3 pl-1\
+                        text-base text-white  \
+                        border border-white rounded-md\
+                        focus:outline-none focus:ring-2 focus:ring-yellow\
+                        sm:text-sm"
+
 
     return (
         <div style={style}>
@@ -35,6 +44,7 @@ function LineExercise({ line_text, status, style, focused }: LineProps) {
             <input
                 type="text"
                 autoFocus={focused}
+                className={inputClass}
                 disabled={status === "INCORRECT" || status === "CORRECT"}
             />
             <div key={status} className={status !== "UNCHECKED" ? "correct" : ""}>

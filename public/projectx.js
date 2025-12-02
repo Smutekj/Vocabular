@@ -163,6 +163,8 @@ var out = console.log.bind(console);
 
 var err = console.error.bind(console);
 
+var IDBFS = "IDBFS is no longer included by default; build with -lidbfs.js";
+
 // perform assertions in shell.js after we set up out() and err(), as otherwise
 // if an assertion fails it cannot print the message
 assert(!ENVIRONMENT_IS_SHELL, "shell environment detected but not enabled at build time.  Add `shell` to `-sENVIRONMENT` to enable.");
@@ -1843,6 +1845,363 @@ var FS_getMode = (canRead, canWrite) => {
   return mode;
 };
 
+var IDBFS = {
+  dbs: {},
+  indexedDB: () => {
+    if (typeof indexedDB != "undefined") return indexedDB;
+    var ret = null;
+    if (typeof window == "object") ret = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+    assert(ret, "IDBFS used, but indexedDB not supported");
+    return ret;
+  },
+  DB_VERSION: 21,
+  DB_STORE_NAME: "FILE_DATA",
+  queuePersist: mount => {
+    function onPersistComplete() {
+      if (mount.idbPersistState === "again") startPersist(); else mount.idbPersistState = 0;
+    }
+    function startPersist() {
+      mount.idbPersistState = "idb";
+      // Mark that we are currently running a sync operation
+      IDBFS.syncfs(mount, /*populate:*/ false, onPersistComplete);
+    }
+    if (!mount.idbPersistState) {
+      // Programs typically write/copy/move multiple files in the in-memory
+      // filesystem within a single app frame, so when a filesystem sync
+      // command is triggered, do not start it immediately, but only after
+      // the current frame is finished. This way all the modified files
+      // inside the main loop tick will be batched up to the same sync.
+      mount.idbPersistState = setTimeout(startPersist, 0);
+    } else if (mount.idbPersistState === "idb") {
+      // There is an active IndexedDB sync operation in-flight, but we now
+      // have accumulated more files to sync. We should therefore queue up
+      // a new sync after the current one finishes so that all writes
+      // will be properly persisted.
+      mount.idbPersistState = "again";
+    }
+  },
+  mount: mount => {
+    // reuse core MEMFS functionality
+    var mnt = MEMFS.mount(mount);
+    // If the automatic IDBFS persistence option has been selected, then automatically persist
+    // all modifications to the filesystem as they occur.
+    if (mount?.opts?.autoPersist) {
+      mnt.idbPersistState = 0;
+      // IndexedDB sync starts in idle state
+      var memfs_node_ops = mnt.node_ops;
+      mnt.node_ops = {
+        ...mnt.node_ops
+      };
+      // Clone node_ops to inject write tracking
+      mnt.node_ops.mknod = (parent, name, mode, dev) => {
+        var node = memfs_node_ops.mknod(parent, name, mode, dev);
+        // Propagate injected node_ops to the newly created child node
+        node.node_ops = mnt.node_ops;
+        // Remember for each IDBFS node which IDBFS mount point they came from so we know which mount to persist on modification.
+        node.idbfs_mount = mnt.mount;
+        // Remember original MEMFS stream_ops for this node
+        node.memfs_stream_ops = node.stream_ops;
+        // Clone stream_ops to inject write tracking
+        node.stream_ops = {
+          ...node.stream_ops
+        };
+        // Track all file writes
+        node.stream_ops.write = (stream, buffer, offset, length, position, canOwn) => {
+          // This file has been modified, we must persist IndexedDB when this file closes
+          stream.node.isModified = true;
+          return node.memfs_stream_ops.write(stream, buffer, offset, length, position, canOwn);
+        };
+        // Persist IndexedDB on file close
+        node.stream_ops.close = stream => {
+          var n = stream.node;
+          if (n.isModified) {
+            IDBFS.queuePersist(n.idbfs_mount);
+            n.isModified = false;
+          }
+          if (n.memfs_stream_ops.close) return n.memfs_stream_ops.close(stream);
+        };
+        return node;
+      };
+      // Also kick off persisting the filesystem on other operations that modify the filesystem.
+      mnt.node_ops.mkdir = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.mkdir(...args));
+      mnt.node_ops.rmdir = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.rmdir(...args));
+      mnt.node_ops.symlink = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.symlink(...args));
+      mnt.node_ops.unlink = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.unlink(...args));
+      mnt.node_ops.rename = (...args) => (IDBFS.queuePersist(mnt.mount), memfs_node_ops.rename(...args));
+    }
+    return mnt;
+  },
+  syncfs: (mount, populate, callback) => {
+    IDBFS.getLocalSet(mount, (err, local) => {
+      if (err) return callback(err);
+      IDBFS.getRemoteSet(mount, (err, remote) => {
+        if (err) return callback(err);
+        var src = populate ? remote : local;
+        var dst = populate ? local : remote;
+        IDBFS.reconcile(src, dst, callback);
+      });
+    });
+  },
+  quit: () => {
+    Object.values(IDBFS.dbs).forEach(value => value.close());
+    IDBFS.dbs = {};
+  },
+  getDB: (name, callback) => {
+    // check the cache first
+    var db = IDBFS.dbs[name];
+    if (db) {
+      return callback(null, db);
+    }
+    var req;
+    try {
+      req = IDBFS.indexedDB().open(name, IDBFS.DB_VERSION);
+    } catch (e) {
+      return callback(e);
+    }
+    if (!req) {
+      return callback("Unable to connect to IndexedDB");
+    }
+    req.onupgradeneeded = e => {
+      var db = /** @type {IDBDatabase} */ (e.target.result);
+      var transaction = e.target.transaction;
+      var fileStore;
+      if (db.objectStoreNames.contains(IDBFS.DB_STORE_NAME)) {
+        fileStore = transaction.objectStore(IDBFS.DB_STORE_NAME);
+      } else {
+        fileStore = db.createObjectStore(IDBFS.DB_STORE_NAME);
+      }
+      if (!fileStore.indexNames.contains("timestamp")) {
+        fileStore.createIndex("timestamp", "timestamp", {
+          unique: false
+        });
+      }
+    };
+    req.onsuccess = () => {
+      db = /** @type {IDBDatabase} */ (req.result);
+      // add to the cache
+      IDBFS.dbs[name] = db;
+      callback(null, db);
+    };
+    req.onerror = e => {
+      callback(e.target.error);
+      e.preventDefault();
+    };
+  },
+  getLocalSet: (mount, callback) => {
+    var entries = {};
+    function isRealDir(p) {
+      return p !== "." && p !== "..";
+    }
+    function toAbsolute(root) {
+      return p => PATH.join2(root, p);
+    }
+    var check = FS.readdir(mount.mountpoint).filter(isRealDir).map(toAbsolute(mount.mountpoint));
+    while (check.length) {
+      var path = check.pop();
+      var stat;
+      try {
+        stat = FS.stat(path);
+      } catch (e) {
+        return callback(e);
+      }
+      if (FS.isDir(stat.mode)) {
+        check.push(...FS.readdir(path).filter(isRealDir).map(toAbsolute(path)));
+      }
+      entries[path] = {
+        "timestamp": stat.mtime
+      };
+    }
+    return callback(null, {
+      type: "local",
+      entries
+    });
+  },
+  getRemoteSet: (mount, callback) => {
+    var entries = {};
+    IDBFS.getDB(mount.mountpoint, (err, db) => {
+      if (err) return callback(err);
+      try {
+        var transaction = db.transaction([ IDBFS.DB_STORE_NAME ], "readonly");
+        transaction.onerror = e => {
+          callback(e.target.error);
+          e.preventDefault();
+        };
+        var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+        var index = store.index("timestamp");
+        index.openKeyCursor().onsuccess = event => {
+          var cursor = event.target.result;
+          if (!cursor) {
+            return callback(null, {
+              type: "remote",
+              db,
+              entries
+            });
+          }
+          entries[cursor.primaryKey] = {
+            "timestamp": cursor.key
+          };
+          cursor.continue();
+        };
+      } catch (e) {
+        return callback(e);
+      }
+    });
+  },
+  loadLocalEntry: (path, callback) => {
+    var stat, node;
+    try {
+      var lookup = FS.lookupPath(path);
+      node = lookup.node;
+      stat = FS.stat(path);
+    } catch (e) {
+      return callback(e);
+    }
+    if (FS.isDir(stat.mode)) {
+      return callback(null, {
+        "timestamp": stat.mtime,
+        "mode": stat.mode
+      });
+    } else if (FS.isFile(stat.mode)) {
+      // Performance consideration: storing a normal JavaScript array to a IndexedDB is much slower than storing a typed array.
+      // Therefore always convert the file contents to a typed array first before writing the data to IndexedDB.
+      node.contents = MEMFS.getFileDataAsTypedArray(node);
+      return callback(null, {
+        "timestamp": stat.mtime,
+        "mode": stat.mode,
+        "contents": node.contents
+      });
+    } else {
+      return callback(new Error("node type not supported"));
+    }
+  },
+  storeLocalEntry: (path, entry, callback) => {
+    try {
+      if (FS.isDir(entry["mode"])) {
+        FS.mkdirTree(path, entry["mode"]);
+      } else if (FS.isFile(entry["mode"])) {
+        FS.writeFile(path, entry["contents"], {
+          canOwn: true
+        });
+      } else {
+        return callback(new Error("node type not supported"));
+      }
+      FS.chmod(path, entry["mode"]);
+      FS.utime(path, entry["timestamp"], entry["timestamp"]);
+    } catch (e) {
+      return callback(e);
+    }
+    callback(null);
+  },
+  removeLocalEntry: (path, callback) => {
+    try {
+      var stat = FS.stat(path);
+      if (FS.isDir(stat.mode)) {
+        FS.rmdir(path);
+      } else if (FS.isFile(stat.mode)) {
+        FS.unlink(path);
+      }
+    } catch (e) {
+      return callback(e);
+    }
+    callback(null);
+  },
+  loadRemoteEntry: (store, path, callback) => {
+    var req = store.get(path);
+    req.onsuccess = event => callback(null, event.target.result);
+    req.onerror = e => {
+      callback(e.target.error);
+      e.preventDefault();
+    };
+  },
+  storeRemoteEntry: (store, path, entry, callback) => {
+    try {
+      var req = store.put(entry, path);
+    } catch (e) {
+      callback(e);
+      return;
+    }
+    req.onsuccess = event => callback();
+    req.onerror = e => {
+      callback(e.target.error);
+      e.preventDefault();
+    };
+  },
+  removeRemoteEntry: (store, path, callback) => {
+    var req = store.delete(path);
+    req.onsuccess = event => callback();
+    req.onerror = e => {
+      callback(e.target.error);
+      e.preventDefault();
+    };
+  },
+  reconcile: (src, dst, callback) => {
+    var total = 0;
+    var create = [];
+    Object.keys(src.entries).forEach(key => {
+      var e = src.entries[key];
+      var e2 = dst.entries[key];
+      if (!e2 || e["timestamp"].getTime() != e2["timestamp"].getTime()) {
+        create.push(key);
+        total++;
+      }
+    });
+    var remove = [];
+    Object.keys(dst.entries).forEach(key => {
+      if (!src.entries[key]) {
+        remove.push(key);
+        total++;
+      }
+    });
+    if (!total) {
+      return callback(null);
+    }
+    var errored = false;
+    var db = src.type === "remote" ? src.db : dst.db;
+    var transaction = db.transaction([ IDBFS.DB_STORE_NAME ], "readwrite");
+    var store = transaction.objectStore(IDBFS.DB_STORE_NAME);
+    function done(err) {
+      if (err && !errored) {
+        errored = true;
+        return callback(err);
+      }
+    }
+    // transaction may abort if (for example) there is a QuotaExceededError
+    transaction.onerror = transaction.onabort = e => {
+      done(e.target.error);
+      e.preventDefault();
+    };
+    transaction.oncomplete = e => {
+      if (!errored) {
+        callback(null);
+      }
+    };
+    // sort paths in ascending order so directory entries are created
+    // before the files inside them
+    create.sort().forEach(path => {
+      if (dst.type === "local") {
+        IDBFS.loadRemoteEntry(store, path, (err, entry) => {
+          if (err) return done(err);
+          IDBFS.storeLocalEntry(path, entry, done);
+        });
+      } else {
+        IDBFS.loadLocalEntry(path, (err, entry) => {
+          if (err) return done(err);
+          IDBFS.storeRemoteEntry(store, path, entry, done);
+        });
+      }
+    });
+    // sort paths in descending order so files are deleted before their
+    // parent directories
+    remove.sort().reverse().forEach(path => {
+      if (dst.type === "local") {
+        IDBFS.removeLocalEntry(path, done);
+      } else {
+        IDBFS.removeRemoteEntry(store, path, done);
+      }
+    });
+  }
+};
+
 var strError = errno => UTF8ToString(_strerror(errno));
 
 var ERRNO_CODES = {
@@ -3262,7 +3621,8 @@ var FS = {
     FS.createDefaultDevices();
     FS.createSpecialDirectories();
     FS.filesystems = {
-      "MEMFS": MEMFS
+      "MEMFS": MEMFS,
+      "IDBFS": IDBFS
     };
   },
   init(input, output, error) {
@@ -3783,14 +4143,56 @@ var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
   return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
 };
 
-function ___syscall_getcwd(buf, size) {
+function ___syscall_getdents64(fd, dirp, count) {
   try {
-    if (size === 0) return -28;
-    var cwd = FS.cwd();
-    var cwdLengthInBytes = lengthBytesUTF8(cwd) + 1;
-    if (size < cwdLengthInBytes) return -68;
-    stringToUTF8(cwd, buf, size);
-    return cwdLengthInBytes;
+    var stream = SYSCALLS.getStreamFromFD(fd);
+    stream.getdents ||= FS.readdir(stream.path);
+    var struct_size = 280;
+    var pos = 0;
+    var off = FS.llseek(stream, 0, 1);
+    var startIdx = Math.floor(off / struct_size);
+    var endIdx = Math.min(stream.getdents.length, startIdx + Math.floor(count / struct_size));
+    for (var idx = startIdx; idx < endIdx; idx++) {
+      var id;
+      var type;
+      var name = stream.getdents[idx];
+      if (name === ".") {
+        id = stream.node.id;
+        type = 4;
+      } else if (name === "..") {
+        var lookup = FS.lookupPath(stream.path, {
+          parent: true
+        });
+        id = lookup.node.id;
+        type = 4;
+      } else {
+        var child;
+        try {
+          child = FS.lookupNode(stream.node, name);
+        } catch (e) {
+          // If the entry is not a directory, file, or symlink, nodefs
+          // lookupNode will raise EINVAL. Skip these and continue.
+          if (e?.errno === 28) {
+            continue;
+          }
+          throw e;
+        }
+        id = child.id;
+        type = FS.isChrdev(child.mode) ? 2 : // DT_CHR, character device.
+        FS.isDir(child.mode) ? 4 : // DT_DIR, directory.
+        FS.isLink(child.mode) ? 10 : // DT_LNK, symbolic link.
+        8;
+      }
+      assert(id);
+      HEAP64[((dirp + pos) >> 3)] = BigInt(id);
+      HEAP64[(((dirp + pos) + (8)) >> 3)] = BigInt((idx + 1) * struct_size);
+      HEAP16[(((dirp + pos) + (16)) >> 1)] = 280;
+      HEAP8[(dirp + pos) + (18)] = type;
+      stringToUTF8(name, dirp + pos + 19, 256);
+      pos += struct_size;
+    }
+    FS.llseek(stream, idx * struct_size, 0);
+    return pos;
   } catch (e) {
     if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
     return -e.errno;
@@ -5914,6 +6316,11 @@ var _emscripten_asm_const_int_sync_on_main_thread = (emAsmAddr, sigPtr, argbuf) 
 
 var _emscripten_asm_const_ptr_sync_on_main_thread = (emAsmAddr, sigPtr, argbuf) => runMainThreadEmAsm(emAsmAddr, sigPtr, argbuf, 1);
 
+var _emscripten_cancel_main_loop = () => {
+  MainLoop.pause();
+  MainLoop.func = null;
+};
+
 var onExits = [];
 
 var JSEvents = {
@@ -6285,6 +6692,17 @@ var _emscripten_exit_pointerlock = () => {
   document.exitPointerLock();
   return 0;
 };
+
+function _emscripten_fetch_free(id) {
+  if (Fetch.xhrs.has(id)) {
+    var xhr = Fetch.xhrs.get(id);
+    Fetch.xhrs.free(id);
+    // check if fetch is still in progress and should be aborted
+    if (xhr.readyState > 0 && xhr.readyState < 4) {
+      xhr.abort();
+    }
+  }
+}
 
 var _emscripten_get_device_pixel_ratio = () => (typeof devicePixelRatio == "number" && devicePixelRatio) || 1;
 
@@ -9310,7 +9728,7 @@ var _emscripten_glWaitSync = _glWaitSync;
 
 var _emscripten_has_asyncify = () => 1;
 
-var _emscripten_pause_main_loop = () => MainLoop.pause();
+var _emscripten_is_main_browser_thread = () => !ENVIRONMENT_IS_WORKER;
 
 var doRequestFullscreen = (target, strategy) => {
   if (!JSEvents.fullscreenEnabled()) return -1;
@@ -9427,10 +9845,6 @@ var _emscripten_resize_heap = requestedSize => {
   }
   err(`Failed to grow the heap from ${oldSize} bytes to ${newSize} bytes, not enough memory!`);
   return false;
-};
-
-var _emscripten_run_script = ptr => {
-  eval(UTF8ToString(ptr));
 };
 
 /** @suppress {checkTypes} */ var _emscripten_sample_gamepad_data = () => {
@@ -9907,6 +10321,433 @@ var _emscripten_sleep = ms => Asyncify.handleSleep(wakeUp => safeSetTimeout(wake
 
 _emscripten_sleep.isAsync = true;
 
+class HandleAllocator {
+  allocated=[ undefined ];
+  freelist=[];
+  get(id) {
+    assert(this.allocated[id] !== undefined, `invalid handle: ${id}`);
+    return this.allocated[id];
+  }
+  has(id) {
+    return this.allocated[id] !== undefined;
+  }
+  allocate(handle) {
+    var id = this.freelist.pop() || this.allocated.length;
+    this.allocated[id] = handle;
+    return id;
+  }
+  free(id) {
+    assert(this.allocated[id] !== undefined);
+    // Set the slot to `undefined` rather than using `delete` here since
+    // apparently arrays with holes in them can be less efficient.
+    this.allocated[id] = undefined;
+    this.freelist.push(id);
+  }
+}
+
+var Fetch = {
+  openDatabase(dbname, dbversion, onsuccess, onerror) {
+    try {
+      var openRequest = indexedDB.open(dbname, dbversion);
+    } catch (e) {
+      return onerror(e);
+    }
+    openRequest.onupgradeneeded = event => {
+      var db = /** @type {IDBDatabase} */ (event.target.result);
+      if (db.objectStoreNames.contains("FILES")) {
+        db.deleteObjectStore("FILES");
+      }
+      db.createObjectStore("FILES");
+    };
+    openRequest.onsuccess = event => onsuccess(event.target.result);
+    openRequest.onerror = onerror;
+  },
+  init() {
+    Fetch.xhrs = new HandleAllocator;
+    var onsuccess = db => {
+      Fetch.dbInstance = db;
+      removeRunDependency("library_fetch_init");
+    };
+    var onerror = () => {
+      Fetch.dbInstance = false;
+      removeRunDependency("library_fetch_init");
+    };
+    addRunDependency("library_fetch_init");
+    Fetch.openDatabase("emscripten_filesystem", 1, onsuccess, onerror);
+  }
+};
+
+function fetchXHR(fetch, onsuccess, onerror, onprogress, onreadystatechange) {
+  var url = HEAPU32[(((fetch) + (8)) >> 2)];
+  if (!url) {
+    onerror(fetch, 0, "no url specified!");
+    return;
+  }
+  var url_ = UTF8ToString(url);
+  var fetch_attr = fetch + 108;
+  var requestMethod = UTF8ToString(fetch_attr + 0);
+  requestMethod ||= "GET";
+  var timeoutMsecs = HEAPU32[(((fetch_attr) + (56)) >> 2)];
+  var userName = HEAPU32[(((fetch_attr) + (68)) >> 2)];
+  var password = HEAPU32[(((fetch_attr) + (72)) >> 2)];
+  var requestHeaders = HEAPU32[(((fetch_attr) + (76)) >> 2)];
+  var overriddenMimeType = HEAPU32[(((fetch_attr) + (80)) >> 2)];
+  var dataPtr = HEAPU32[(((fetch_attr) + (84)) >> 2)];
+  var dataLength = HEAPU32[(((fetch_attr) + (88)) >> 2)];
+  var fetchAttributes = HEAPU32[(((fetch_attr) + (52)) >> 2)];
+  var fetchAttrLoadToMemory = !!(fetchAttributes & 1);
+  var fetchAttrStreamData = !!(fetchAttributes & 2);
+  var fetchAttrSynchronous = !!(fetchAttributes & 64);
+  var userNameStr = userName ? UTF8ToString(userName) : undefined;
+  var passwordStr = password ? UTF8ToString(password) : undefined;
+  var xhr = new XMLHttpRequest;
+  xhr.withCredentials = !!HEAPU8[(fetch_attr) + (60)];
+  xhr.open(requestMethod, url_, !fetchAttrSynchronous, userNameStr, passwordStr);
+  if (!fetchAttrSynchronous) xhr.timeout = timeoutMsecs;
+  // XHR timeout field is only accessible in async XHRs, and must be set after .open() but before .send().
+  xhr.url_ = url_;
+  // Save the url for debugging purposes (and for comparing to the responseURL that server side advertised)
+  assert(!fetchAttrStreamData, "streaming uses moz-chunked-arraybuffer which is no longer supported; TODO: rewrite using fetch()");
+  xhr.responseType = "arraybuffer";
+  if (overriddenMimeType) {
+    var overriddenMimeTypeStr = UTF8ToString(overriddenMimeType);
+    xhr.overrideMimeType(overriddenMimeTypeStr);
+  }
+  if (requestHeaders) {
+    for (;;) {
+      var key = HEAPU32[((requestHeaders) >> 2)];
+      if (!key) break;
+      var value = HEAPU32[(((requestHeaders) + (4)) >> 2)];
+      if (!value) break;
+      requestHeaders += 8;
+      var keyStr = UTF8ToString(key);
+      var valueStr = UTF8ToString(value);
+      xhr.setRequestHeader(keyStr, valueStr);
+    }
+  }
+  var id = Fetch.xhrs.allocate(xhr);
+  HEAPU32[((fetch) >> 2)] = id;
+  var data = (dataPtr && dataLength) ? HEAPU8.slice(dataPtr, dataPtr + dataLength) : null;
+  // TODO: Support specifying custom headers to the request.
+  // Share the code to save the response, as we need to do so both on success
+  // and on error (despite an error, there may be a response, like a 404 page).
+  // This receives a condition, which determines whether to save the xhr's
+  // response, or just 0.
+  function saveResponseAndStatus() {
+    var ptr = 0;
+    var ptrLen = 0;
+    if (xhr.response && fetchAttrLoadToMemory && HEAPU32[(((fetch) + (12)) >> 2)] === 0) {
+      ptrLen = xhr.response.byteLength;
+    }
+    if (ptrLen > 0) {
+      // The data pointer malloc()ed here has the same lifetime as the emscripten_fetch_t structure itself has, and is
+      // freed when emscripten_fetch_close() is called.
+      ptr = _malloc(ptrLen);
+      HEAPU8.set(new Uint8Array(/** @type{Array<number>} */ (xhr.response)), ptr);
+    }
+    HEAPU32[(((fetch) + (12)) >> 2)] = ptr;
+    writeI53ToI64(fetch + 16, ptrLen);
+    writeI53ToI64(fetch + 24, 0);
+    var len = xhr.response ? xhr.response.byteLength : 0;
+    if (len) {
+      // If the final XHR.onload handler receives the bytedata to compute total length, report that,
+      // otherwise don't write anything out here, which will retain the latest byte size reported in
+      // the most recent XHR.onprogress handler.
+      writeI53ToI64(fetch + 32, len);
+    }
+    HEAP16[(((fetch) + (40)) >> 1)] = xhr.readyState;
+    HEAP16[(((fetch) + (42)) >> 1)] = xhr.status;
+    if (xhr.statusText) stringToUTF8(xhr.statusText, fetch + 44, 64);
+    if (fetchAttrSynchronous) {
+      // The response url pointer malloc()ed here has the same lifetime as the emscripten_fetch_t structure itself has, and is
+      // freed when emscripten_fetch_close() is called.
+      var ruPtr = stringToNewUTF8(xhr.responseURL);
+      HEAPU32[(((fetch) + (200)) >> 2)] = ruPtr;
+    }
+  }
+  xhr.onload = e => {
+    // check if xhr was aborted by user and don't try to call back
+    if (!Fetch.xhrs.has(id)) {
+      return;
+    }
+    saveResponseAndStatus();
+    if (xhr.status >= 200 && xhr.status < 300) {
+      onsuccess?.(fetch, xhr, e);
+    } else {
+      onerror?.(fetch, xhr, e);
+    }
+  };
+  xhr.onerror = e => {
+    // check if xhr was aborted by user and don't try to call back
+    if (!Fetch.xhrs.has(id)) {
+      return;
+    }
+    saveResponseAndStatus();
+    onerror?.(fetch, xhr, e);
+  };
+  xhr.ontimeout = e => {
+    // check if xhr was aborted by user and don't try to call back
+    if (!Fetch.xhrs.has(id)) {
+      return;
+    }
+    onerror?.(fetch, xhr, e);
+  };
+  xhr.onprogress = e => {
+    // check if xhr was aborted by user and don't try to call back
+    if (!Fetch.xhrs.has(id)) {
+      return;
+    }
+    var ptrLen = (fetchAttrLoadToMemory && fetchAttrStreamData && xhr.response) ? xhr.response.byteLength : 0;
+    var ptr = 0;
+    if (ptrLen > 0 && fetchAttrLoadToMemory && fetchAttrStreamData) {
+      assert(onprogress, "When doing a streaming fetch, you should have an onprogress handler registered to receive the chunks!");
+      // Allocate byte data in Emscripten heap for the streamed memory block (freed immediately after onprogress call)
+      ptr = _malloc(ptrLen);
+      HEAPU8.set(new Uint8Array(/** @type{Array<number>} */ (xhr.response)), ptr);
+    }
+    HEAPU32[(((fetch) + (12)) >> 2)] = ptr;
+    writeI53ToI64(fetch + 16, ptrLen);
+    writeI53ToI64(fetch + 24, e.loaded - ptrLen);
+    writeI53ToI64(fetch + 32, e.total);
+    HEAP16[(((fetch) + (40)) >> 1)] = xhr.readyState;
+    // If loading files from a source that does not give HTTP status code, assume success if we get data bytes
+    if (xhr.readyState >= 3 && xhr.status === 0 && e.loaded > 0) xhr.status = 200;
+    HEAP16[(((fetch) + (42)) >> 1)] = xhr.status;
+    if (xhr.statusText) stringToUTF8(xhr.statusText, fetch + 44, 64);
+    onprogress?.(fetch, xhr, e);
+    _free(ptr);
+  };
+  xhr.onreadystatechange = e => {
+    // check if xhr was aborted by user and don't try to call back
+    if (!Fetch.xhrs.has(id)) {
+      return;
+    }
+    HEAP16[(((fetch) + (40)) >> 1)] = xhr.readyState;
+    if (xhr.readyState >= 2) {
+      HEAP16[(((fetch) + (42)) >> 1)] = xhr.status;
+    }
+    if (!fetchAttrSynchronous && (xhr.readyState === 2 && xhr.responseURL.length > 0)) {
+      // The response url pointer malloc()ed here has the same lifetime as the emscripten_fetch_t structure itself has, and is
+      // freed when emscripten_fetch_close() is called.
+      var ruPtr = stringToNewUTF8(xhr.responseURL);
+      HEAPU32[(((fetch) + (200)) >> 2)] = ruPtr;
+    }
+    onreadystatechange?.(fetch, xhr, e);
+  };
+  try {
+    xhr.send(data);
+  } catch (e) {
+    onerror?.(fetch, xhr, e);
+  }
+}
+
+function fetchCacheData(/** @type {IDBDatabase} */ db, fetch, data, onsuccess, onerror) {
+  if (!db) {
+    onerror(fetch, 0, "IndexedDB not available!");
+    return;
+  }
+  var fetch_attr = fetch + 108;
+  var destinationPath = HEAPU32[(((fetch_attr) + (64)) >> 2)];
+  destinationPath ||= HEAPU32[(((fetch) + (8)) >> 2)];
+  var destinationPathStr = UTF8ToString(destinationPath);
+  try {
+    var transaction = db.transaction([ "FILES" ], "readwrite");
+    var packages = transaction.objectStore("FILES");
+    var putRequest = packages.put(data, destinationPathStr);
+    putRequest.onsuccess = event => {
+      HEAP16[(((fetch) + (40)) >> 1)] = 4;
+      // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+      HEAP16[(((fetch) + (42)) >> 1)] = 200;
+      // Mimic XHR HTTP status code 200 "OK"
+      stringToUTF8("OK", fetch + 44, 64);
+      onsuccess(fetch, 0, destinationPathStr);
+    };
+    putRequest.onerror = error => {
+      // Most likely we got an error if IndexedDB is unwilling to store any more data for this page.
+      // TODO: Can we identify and break down different IndexedDB-provided errors and convert those
+      // to more HTTP status codes for more information?
+      HEAP16[(((fetch) + (40)) >> 1)] = 4;
+      // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+      HEAP16[(((fetch) + (42)) >> 1)] = 413;
+      // Mimic XHR HTTP status code 413 "Payload Too Large"
+      stringToUTF8("Payload Too Large", fetch + 44, 64);
+      onerror(fetch, 0, error);
+    };
+  } catch (e) {
+    onerror(fetch, 0, e);
+  }
+}
+
+function fetchLoadCachedData(db, fetch, onsuccess, onerror) {
+  if (!db) {
+    onerror(fetch, 0, "IndexedDB not available!");
+    return;
+  }
+  var fetch_attr = fetch + 108;
+  var path = HEAPU32[(((fetch_attr) + (64)) >> 2)];
+  path ||= HEAPU32[(((fetch) + (8)) >> 2)];
+  var pathStr = UTF8ToString(path);
+  try {
+    var transaction = db.transaction([ "FILES" ], "readonly");
+    var packages = transaction.objectStore("FILES");
+    var getRequest = packages.get(pathStr);
+    getRequest.onsuccess = event => {
+      if (event.target.result) {
+        var value = event.target.result;
+        var len = value.byteLength || value.length;
+        // The data pointer malloc()ed here has the same lifetime as the emscripten_fetch_t structure itself has, and is
+        // freed when emscripten_fetch_close() is called.
+        var ptr = _malloc(len);
+        HEAPU8.set(new Uint8Array(value), ptr);
+        HEAPU32[(((fetch) + (12)) >> 2)] = ptr;
+        writeI53ToI64(fetch + 16, len);
+        writeI53ToI64(fetch + 24, 0);
+        writeI53ToI64(fetch + 32, len);
+        HEAP16[(((fetch) + (40)) >> 1)] = 4;
+        // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+        HEAP16[(((fetch) + (42)) >> 1)] = 200;
+        // Mimic XHR HTTP status code 200 "OK"
+        stringToUTF8("OK", fetch + 44, 64);
+        onsuccess(fetch, 0, value);
+      } else {
+        // Succeeded to load, but the load came back with the value of undefined, treat that as an error since we never store undefined in db.
+        HEAP16[(((fetch) + (40)) >> 1)] = 4;
+        // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+        HEAP16[(((fetch) + (42)) >> 1)] = 404;
+        // Mimic XHR HTTP status code 404 "Not Found"
+        stringToUTF8("Not Found", fetch + 44, 64);
+        onerror(fetch, 0, "no data");
+      }
+    };
+    getRequest.onerror = error => {
+      HEAP16[(((fetch) + (40)) >> 1)] = 4;
+      // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+      HEAP16[(((fetch) + (42)) >> 1)] = 404;
+      // Mimic XHR HTTP status code 404 "Not Found"
+      stringToUTF8("Not Found", fetch + 44, 64);
+      onerror(fetch, 0, error);
+    };
+  } catch (e) {
+    onerror(fetch, 0, e);
+  }
+}
+
+function fetchDeleteCachedData(db, fetch, onsuccess, onerror) {
+  if (!db) {
+    onerror(fetch, 0, "IndexedDB not available!");
+    return;
+  }
+  var fetch_attr = fetch + 108;
+  var path = HEAPU32[(((fetch_attr) + (64)) >> 2)];
+  path ||= HEAPU32[(((fetch) + (8)) >> 2)];
+  var pathStr = UTF8ToString(path);
+  try {
+    var transaction = db.transaction([ "FILES" ], "readwrite");
+    var packages = transaction.objectStore("FILES");
+    var request = packages.delete(pathStr);
+    request.onsuccess = event => {
+      var value = event.target.result;
+      HEAPU32[(((fetch) + (12)) >> 2)] = 0;
+      writeI53ToI64(fetch + 16, 0);
+      writeI53ToI64(fetch + 24, 0);
+      writeI53ToI64(fetch + 32, 0);
+      // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+      HEAP16[(((fetch) + (40)) >> 1)] = 4;
+      // Mimic XHR HTTP status code 200 "OK"
+      HEAP16[(((fetch) + (42)) >> 1)] = 200;
+      stringToUTF8("OK", fetch + 44, 64);
+      onsuccess(fetch, 0, value);
+    };
+    request.onerror = error => {
+      HEAP16[(((fetch) + (40)) >> 1)] = 4;
+      // Mimic XHR readyState 4 === 'DONE: The operation is complete'
+      HEAP16[(((fetch) + (42)) >> 1)] = 404;
+      // Mimic XHR HTTP status code 404 "Not Found"
+      stringToUTF8("Not Found", fetch + 44, 64);
+      onerror(fetch, 0, error);
+    };
+  } catch (e) {
+    onerror(fetch, 0, e);
+  }
+}
+
+function _emscripten_start_fetch(fetch, successcb, errorcb, progresscb, readystatechangecb) {
+  // Avoid shutting down the runtime since we want to wait for the async
+  // response.
+  var fetch_attr = fetch + 108;
+  var onsuccess = HEAPU32[(((fetch_attr) + (36)) >> 2)];
+  var onerror = HEAPU32[(((fetch_attr) + (40)) >> 2)];
+  var onprogress = HEAPU32[(((fetch_attr) + (44)) >> 2)];
+  var onreadystatechange = HEAPU32[(((fetch_attr) + (48)) >> 2)];
+  var fetchAttributes = HEAPU32[(((fetch_attr) + (52)) >> 2)];
+  var fetchAttrSynchronous = !!(fetchAttributes & 64);
+  function doCallback(f) {
+    if (fetchAttrSynchronous) {
+      f();
+    } else {
+      callUserCallback(f);
+    }
+  }
+  var reportSuccess = (fetch, xhr, e) => {
+    doCallback(() => {
+      if (onsuccess) (a1 => dynCall_vi(onsuccess, a1))(fetch); else successcb?.(fetch);
+    });
+  };
+  var reportProgress = (fetch, xhr, e) => {
+    doCallback(() => {
+      if (onprogress) (a1 => dynCall_vi(onprogress, a1))(fetch); else progresscb?.(fetch);
+    });
+  };
+  var reportError = (fetch, xhr, e) => {
+    doCallback(() => {
+      if (onerror) (a1 => dynCall_vi(onerror, a1))(fetch); else errorcb?.(fetch);
+    });
+  };
+  var reportReadyStateChange = (fetch, xhr, e) => {
+    doCallback(() => {
+      if (onreadystatechange) (a1 => dynCall_vi(onreadystatechange, a1))(fetch); else readystatechangecb?.(fetch);
+    });
+  };
+  var performUncachedXhr = (fetch, xhr, e) => {
+    fetchXHR(fetch, reportSuccess, reportError, reportProgress, reportReadyStateChange);
+  };
+  var cacheResultAndReportSuccess = (fetch, xhr, e) => {
+    var storeSuccess = (fetch, xhr, e) => {
+      doCallback(() => {
+        if (onsuccess) (a1 => dynCall_vi(onsuccess, a1))(fetch); else successcb?.(fetch);
+      });
+    };
+    var storeError = (fetch, xhr, e) => {
+      doCallback(() => {
+        if (onsuccess) (a1 => dynCall_vi(onsuccess, a1))(fetch); else successcb?.(fetch);
+      });
+    };
+    fetchCacheData(Fetch.dbInstance, fetch, xhr.response, storeSuccess, storeError);
+  };
+  var performCachedXhr = (fetch, xhr, e) => {
+    fetchXHR(fetch, cacheResultAndReportSuccess, reportError, reportProgress, reportReadyStateChange);
+  };
+  var requestMethod = UTF8ToString(fetch_attr + 0);
+  var fetchAttrReplace = !!(fetchAttributes & 16);
+  var fetchAttrPersistFile = !!(fetchAttributes & 4);
+  var fetchAttrNoDownload = !!(fetchAttributes & 32);
+  if (requestMethod === "EM_IDB_STORE") {
+    // TODO(?): Here we perform a clone of the data, because storing shared typed arrays to IndexedDB does not seem to be allowed.
+    var ptr = HEAPU32[(((fetch_attr) + (84)) >> 2)];
+    var size = HEAPU32[(((fetch_attr) + (88)) >> 2)];
+    fetchCacheData(Fetch.dbInstance, fetch, HEAPU8.slice(ptr, ptr + size), reportSuccess, reportError);
+  } else if (requestMethod === "EM_IDB_DELETE") {
+    fetchDeleteCachedData(Fetch.dbInstance, fetch, reportSuccess, reportError);
+  } else if (!fetchAttrReplace) {
+    fetchLoadCachedData(Fetch.dbInstance, fetch, reportSuccess, fetchAttrNoDownload ? reportError : (fetchAttrPersistFile ? performCachedXhr : performUncachedXhr));
+  } else if (!fetchAttrNoDownload) {
+    fetchXHR(fetch, fetchAttrPersistFile ? cacheResultAndReportSuccess : reportSuccess, reportError, reportProgress, reportReadyStateChange);
+  } else {
+    return 0;
+  }
+  return fetch;
+}
+
 var ENV = {};
 
 var getExecutableName = () => thisProgram || "./this.program";
@@ -10143,7 +10984,7 @@ var Asyncify = {
     Disabled: 3
   },
   state: 0,
-  StackSize: 4096,
+  StackSize: 65536,
   currData: null,
   handleSleepReturnValue: 0,
   exportCallStack: [],
@@ -10333,6 +11174,10 @@ var FS_createDevice = (...args) => FS.createDevice(...args);
 
 var createContext = Browser.createContext;
 
+var _emscripten_pause_main_loop = () => MainLoop.pause();
+
+var _emscripten_resume_main_loop = () => MainLoop.resume();
+
 var incrementExceptionRefcount = ptr => ___cxa_increment_exception_refcount(ptr);
 
 var decrementExceptionRefcount = ptr => ___cxa_decrement_exception_refcount(ptr);
@@ -10375,6 +11220,8 @@ MainLoop.init();
 
 for (let i = 0; i < 32; ++i) tempFixedLengthArray.push(new Array(i));
 
+Fetch.init();
+
 // End JS library code
 // include: postlibrary.js
 // This file is included after the automatically-generated JS library code
@@ -10412,6 +11259,8 @@ Module["addRunDependency"] = addRunDependency;
 
 Module["removeRunDependency"] = removeRunDependency;
 
+Module["callMain"] = callMain;
+
 Module["requestFullscreen"] = requestFullscreen;
 
 Module["createContext"] = createContext;
@@ -10428,16 +11277,20 @@ Module["FS_createDataFile"] = FS_createDataFile;
 
 Module["FS_createLazyFile"] = FS_createLazyFile;
 
-var missingLibrarySymbols = [ "writeI53ToI64Clamped", "writeI53ToI64Signaling", "writeI53ToU64Clamped", "writeI53ToU64Signaling", "convertI32PairToI53", "convertI32PairToI53Checked", "convertU32PairToI53", "getTempRet0", "withStackSave", "inetPton4", "inetNtop4", "inetPton6", "inetNtop6", "readSockaddr", "writeSockaddr", "emscriptenLog", "getDynCaller", "asmjsMangle", "HandleAllocator", "getNativeTypeSize", "addOnInit", "addOnPostCtor", "addOnPreMain", "STACK_SIZE", "STACK_ALIGN", "POINTER_SIZE", "ASSERTIONS", "ccall", "cwrap", "uleb128Encode", "generateFuncType", "convertJsFunctionToWasm", "getEmptyTableSlot", "updateTableMap", "getFunctionAddress", "addFunction", "removeFunction", "reallyNegative", "unSign", "strLen", "reSign", "formatString", "intArrayToString", "AsciiToString", "stringToAscii", "UTF16ToString", "stringToUTF16", "lengthBytesUTF16", "UTF32ToString", "stringToUTF32", "lengthBytesUTF32", "writeArrayToMemory", "fillDeviceOrientationEventData", "registerDeviceOrientationEventCallback", "fillDeviceMotionEventData", "registerDeviceMotionEventCallback", "screenOrientation", "fillOrientationChangeEventData", "registerOrientationChangeEventCallback", "hideEverythingExceptGivenElement", "restoreHiddenElements", "softFullscreenResizeWebGLRenderTarget", "registerPointerlockErrorEventCallback", "fillBatteryEventData", "battery", "registerBatteryEventCallback", "jsStackTrace", "getCallstack", "convertPCtoSourceLocation", "wasiRightsToMuslOFlags", "wasiOFlagsToMuslOFlags", "setImmediateWrapped", "safeRequestAnimationFrame", "clearImmediateWrapped", "registerPostMainLoop", "getPromise", "makePromise", "idsToPromises", "makePromiseCallback", "Browser_asyncPrepareDataCounter", "isLeapYear", "ydayFromDate", "arraySum", "addDays", "getSocketFromFD", "getSocketAddress", "FS_mkdirTree", "_setNetworkCallback", "writeGLArray", "registerWebGlEventCallback", "ALLOC_NORMAL", "ALLOC_STACK", "allocate", "writeStringToMemory", "writeAsciiToMemory", "demangle", "stackTrace" ];
+var missingLibrarySymbols = [ "writeI53ToI64Clamped", "writeI53ToI64Signaling", "writeI53ToU64Clamped", "writeI53ToU64Signaling", "convertI32PairToI53", "convertI32PairToI53Checked", "convertU32PairToI53", "getTempRet0", "withStackSave", "inetPton4", "inetNtop4", "inetPton6", "inetNtop6", "readSockaddr", "writeSockaddr", "emscriptenLog", "getDynCaller", "asmjsMangle", "getNativeTypeSize", "addOnInit", "addOnPostCtor", "addOnPreMain", "STACK_SIZE", "STACK_ALIGN", "POINTER_SIZE", "ASSERTIONS", "ccall", "cwrap", "uleb128Encode", "generateFuncType", "convertJsFunctionToWasm", "getEmptyTableSlot", "updateTableMap", "getFunctionAddress", "addFunction", "removeFunction", "reallyNegative", "unSign", "strLen", "reSign", "formatString", "intArrayToString", "AsciiToString", "stringToAscii", "UTF16ToString", "stringToUTF16", "lengthBytesUTF16", "UTF32ToString", "stringToUTF32", "lengthBytesUTF32", "writeArrayToMemory", "fillDeviceOrientationEventData", "registerDeviceOrientationEventCallback", "fillDeviceMotionEventData", "registerDeviceMotionEventCallback", "screenOrientation", "fillOrientationChangeEventData", "registerOrientationChangeEventCallback", "hideEverythingExceptGivenElement", "restoreHiddenElements", "softFullscreenResizeWebGLRenderTarget", "registerPointerlockErrorEventCallback", "fillBatteryEventData", "battery", "registerBatteryEventCallback", "jsStackTrace", "getCallstack", "convertPCtoSourceLocation", "wasiRightsToMuslOFlags", "wasiOFlagsToMuslOFlags", "setImmediateWrapped", "safeRequestAnimationFrame", "clearImmediateWrapped", "registerPostMainLoop", "getPromise", "makePromise", "idsToPromises", "makePromiseCallback", "Browser_asyncPrepareDataCounter", "isLeapYear", "ydayFromDate", "arraySum", "addDays", "getSocketFromFD", "getSocketAddress", "FS_mkdirTree", "_setNetworkCallback", "writeGLArray", "registerWebGlEventCallback", "ALLOC_NORMAL", "ALLOC_STACK", "allocate", "writeStringToMemory", "writeAsciiToMemory", "demangle", "stackTrace" ];
 
 missingLibrarySymbols.forEach(missingLibrarySymbol);
 
-var unexportedSymbols = [ "run", "out", "err", "callMain", "abort", "wasmMemory", "wasmExports", "HEAPF32", "HEAPF64", "HEAP8", "HEAPU8", "HEAP16", "HEAPU16", "HEAP32", "HEAPU32", "HEAP64", "HEAPU64", "writeStackCookie", "checkStackCookie", "writeI53ToI64", "readI53FromI64", "readI53FromU64", "INT53_MAX", "INT53_MIN", "bigintToI53Checked", "stackSave", "stackRestore", "stackAlloc", "setTempRet0", "ptrToString", "zeroMemory", "exitJS", "getHeapMax", "growMemory", "ENV", "ERRNO_CODES", "strError", "DNS", "Protocols", "Sockets", "timers", "warnOnce", "readEmAsmArgsArray", "readEmAsmArgs", "runEmAsmFunction", "runMainThreadEmAsm", "jstoi_q", "getExecutableName", "autoResumeAudioContext", "dynCallLegacy", "dynCall", "handleException", "keepRuntimeAlive", "runtimeKeepalivePush", "runtimeKeepalivePop", "callUserCallback", "maybeExit", "asyncLoad", "alignMemory", "mmapAlloc", "wasmTable", "getUniqueRunDependency", "noExitRuntime", "addOnPreRun", "addOnExit", "addOnPostRun", "sigToWasmTypes", "freeTableIndexes", "functionsInTableMap", "setValue", "getValue", "PATH", "PATH_FS", "UTF8Decoder", "UTF8ArrayToString", "UTF8ToString", "stringToUTF8Array", "stringToUTF8", "lengthBytesUTF8", "intArrayFromString", "UTF16Decoder", "stringToNewUTF8", "stringToUTF8OnStack", "JSEvents", "registerKeyEventCallback", "specialHTMLTargets", "maybeCStringToJsString", "findEventTarget", "findCanvasEventTarget", "getBoundingClientRect", "fillMouseEventData", "registerMouseEventCallback", "registerWheelEventCallback", "registerUiEventCallback", "registerFocusEventCallback", "fillFullscreenChangeEventData", "registerFullscreenChangeEventCallback", "JSEvents_requestFullscreen", "JSEvents_resizeCanvasForFullscreen", "registerRestoreOldStyle", "setLetterbox", "currentFullscreenStrategy", "restoreOldWindowedStyle", "doRequestFullscreen", "fillPointerlockChangeEventData", "registerPointerlockChangeEventCallback", "requestPointerLock", "fillVisibilityChangeEventData", "registerVisibilityChangeEventCallback", "registerTouchEventCallback", "fillGamepadEventData", "registerGamepadEventCallback", "registerBeforeUnloadEventCallback", "setCanvasElementSize", "getCanvasElementSize", "UNWIND_CACHE", "ExitStatus", "getEnvStrings", "checkWasiClock", "doReadv", "doWritev", "initRandomFill", "randomFill", "safeSetTimeout", "emSetImmediate", "emClearImmediate_deps", "emClearImmediate", "registerPreMainLoop", "promiseMap", "uncaughtExceptionCount", "exceptionLast", "exceptionCaught", "ExceptionInfo", "findMatchingCatch", "getExceptionMessageCommon", "Browser", "requestFullScreen", "setCanvasSize", "getUserMedia", "getPreloadedImageData__data", "wget", "MONTH_DAYS_REGULAR", "MONTH_DAYS_LEAP", "MONTH_DAYS_REGULAR_CUMULATIVE", "MONTH_DAYS_LEAP_CUMULATIVE", "SYSCALLS", "preloadPlugins", "FS_modeStringToFlags", "FS_getMode", "FS_stdin_getChar_buffer", "FS_stdin_getChar", "FS_readFile", "FS", "FS_root", "FS_mounts", "FS_devices", "FS_streams", "FS_nextInode", "FS_nameTable", "FS_currentPath", "FS_initialized", "FS_ignorePermissions", "FS_filesystems", "FS_syncFSRequests", "FS_readFiles", "FS_lookupPath", "FS_getPath", "FS_hashName", "FS_hashAddNode", "FS_hashRemoveNode", "FS_lookupNode", "FS_createNode", "FS_destroyNode", "FS_isRoot", "FS_isMountpoint", "FS_isFile", "FS_isDir", "FS_isLink", "FS_isChrdev", "FS_isBlkdev", "FS_isFIFO", "FS_isSocket", "FS_flagsToPermissionString", "FS_nodePermissions", "FS_mayLookup", "FS_mayCreate", "FS_mayDelete", "FS_mayOpen", "FS_checkOpExists", "FS_nextfd", "FS_getStreamChecked", "FS_getStream", "FS_createStream", "FS_closeStream", "FS_dupStream", "FS_doSetAttr", "FS_chrdev_stream_ops", "FS_major", "FS_minor", "FS_makedev", "FS_registerDevice", "FS_getDevice", "FS_getMounts", "FS_syncfs", "FS_mount", "FS_unmount", "FS_lookup", "FS_mknod", "FS_statfs", "FS_statfsStream", "FS_statfsNode", "FS_create", "FS_mkdir", "FS_mkdev", "FS_symlink", "FS_rename", "FS_rmdir", "FS_readdir", "FS_readlink", "FS_stat", "FS_fstat", "FS_lstat", "FS_doChmod", "FS_chmod", "FS_lchmod", "FS_fchmod", "FS_doChown", "FS_chown", "FS_lchown", "FS_fchown", "FS_doTruncate", "FS_truncate", "FS_ftruncate", "FS_utime", "FS_open", "FS_close", "FS_isClosed", "FS_llseek", "FS_read", "FS_write", "FS_mmap", "FS_msync", "FS_ioctl", "FS_writeFile", "FS_cwd", "FS_chdir", "FS_createDefaultDirectories", "FS_createDefaultDevices", "FS_createSpecialDirectories", "FS_createStandardStreams", "FS_staticInit", "FS_init", "FS_quit", "FS_findObject", "FS_analyzePath", "FS_createFile", "FS_forceLoadFile", "FS_absolutePath", "FS_createFolder", "FS_createLink", "FS_joinPath", "FS_mmapAlloc", "FS_standardizePath", "MEMFS", "TTY", "PIPEFS", "SOCKFS", "tempFixedLengthArray", "miniTempWebGLFloatBuffers", "miniTempWebGLIntBuffers", "heapObjectForWebGLType", "toTypedArrayIndex", "webgl_enable_WEBGL_multi_draw", "webgl_enable_EXT_polygon_offset_clamp", "webgl_enable_EXT_clip_control", "webgl_enable_WEBGL_polygon_mode", "GL", "emscriptenWebGLGet", "computeUnpackAlignedImageSize", "colorChannelsInGlTextureFormat", "emscriptenWebGLGetTexPixelData", "emscriptenWebGLGetUniform", "webglGetUniformLocation", "webglPrepareUniformLocationsBeforeFirstUse", "webglGetLeftBracePos", "emscriptenWebGLGetVertexAttrib", "__glGetActiveAttribOrUniform", "emscriptenWebGLGetBufferBinding", "emscriptenWebGLValidateMapBufferTarget", "AL", "GLUT", "EGL", "GLEW", "IDBStore", "runAndAbortIfError", "Asyncify", "Fibers", "emscriptenWebGLGetIndexed", "webgl_enable_WEBGL_draw_instanced_base_vertex_base_instance", "webgl_enable_WEBGL_multi_draw_instanced_base_vertex_base_instance", "allocateUTF8", "allocateUTF8OnStack", "print", "printErr", "jstoi_s" ];
+var unexportedSymbols = [ "run", "out", "err", "abort", "wasmMemory", "wasmExports", "HEAPF32", "HEAPF64", "HEAP8", "HEAPU8", "HEAP16", "HEAPU16", "HEAP32", "HEAPU32", "HEAP64", "HEAPU64", "writeStackCookie", "checkStackCookie", "writeI53ToI64", "readI53FromI64", "readI53FromU64", "INT53_MAX", "INT53_MIN", "bigintToI53Checked", "stackSave", "stackRestore", "stackAlloc", "setTempRet0", "ptrToString", "zeroMemory", "exitJS", "getHeapMax", "growMemory", "ENV", "ERRNO_CODES", "strError", "DNS", "Protocols", "Sockets", "timers", "warnOnce", "readEmAsmArgsArray", "readEmAsmArgs", "runEmAsmFunction", "runMainThreadEmAsm", "jstoi_q", "getExecutableName", "autoResumeAudioContext", "dynCallLegacy", "dynCall", "handleException", "keepRuntimeAlive", "runtimeKeepalivePush", "runtimeKeepalivePop", "callUserCallback", "maybeExit", "asyncLoad", "alignMemory", "mmapAlloc", "HandleAllocator", "wasmTable", "getUniqueRunDependency", "noExitRuntime", "addOnPreRun", "addOnExit", "addOnPostRun", "sigToWasmTypes", "freeTableIndexes", "functionsInTableMap", "setValue", "getValue", "PATH", "PATH_FS", "UTF8Decoder", "UTF8ArrayToString", "UTF8ToString", "stringToUTF8Array", "stringToUTF8", "lengthBytesUTF8", "intArrayFromString", "UTF16Decoder", "stringToNewUTF8", "stringToUTF8OnStack", "JSEvents", "registerKeyEventCallback", "specialHTMLTargets", "maybeCStringToJsString", "findEventTarget", "findCanvasEventTarget", "getBoundingClientRect", "fillMouseEventData", "registerMouseEventCallback", "registerWheelEventCallback", "registerUiEventCallback", "registerFocusEventCallback", "fillFullscreenChangeEventData", "registerFullscreenChangeEventCallback", "JSEvents_requestFullscreen", "JSEvents_resizeCanvasForFullscreen", "registerRestoreOldStyle", "setLetterbox", "currentFullscreenStrategy", "restoreOldWindowedStyle", "doRequestFullscreen", "fillPointerlockChangeEventData", "registerPointerlockChangeEventCallback", "requestPointerLock", "fillVisibilityChangeEventData", "registerVisibilityChangeEventCallback", "registerTouchEventCallback", "fillGamepadEventData", "registerGamepadEventCallback", "registerBeforeUnloadEventCallback", "setCanvasElementSize", "getCanvasElementSize", "UNWIND_CACHE", "ExitStatus", "getEnvStrings", "checkWasiClock", "doReadv", "doWritev", "initRandomFill", "randomFill", "safeSetTimeout", "emSetImmediate", "emClearImmediate_deps", "emClearImmediate", "registerPreMainLoop", "promiseMap", "uncaughtExceptionCount", "exceptionLast", "exceptionCaught", "ExceptionInfo", "findMatchingCatch", "getExceptionMessageCommon", "Browser", "requestFullScreen", "setCanvasSize", "getUserMedia", "getPreloadedImageData__data", "wget", "MONTH_DAYS_REGULAR", "MONTH_DAYS_LEAP", "MONTH_DAYS_REGULAR_CUMULATIVE", "MONTH_DAYS_LEAP_CUMULATIVE", "SYSCALLS", "preloadPlugins", "FS_modeStringToFlags", "FS_getMode", "FS_stdin_getChar_buffer", "FS_stdin_getChar", "FS_readFile", "FS", "FS_root", "FS_mounts", "FS_devices", "FS_streams", "FS_nextInode", "FS_nameTable", "FS_currentPath", "FS_initialized", "FS_ignorePermissions", "FS_filesystems", "FS_syncFSRequests", "FS_readFiles", "FS_lookupPath", "FS_getPath", "FS_hashName", "FS_hashAddNode", "FS_hashRemoveNode", "FS_lookupNode", "FS_createNode", "FS_destroyNode", "FS_isRoot", "FS_isMountpoint", "FS_isFile", "FS_isDir", "FS_isLink", "FS_isChrdev", "FS_isBlkdev", "FS_isFIFO", "FS_isSocket", "FS_flagsToPermissionString", "FS_nodePermissions", "FS_mayLookup", "FS_mayCreate", "FS_mayDelete", "FS_mayOpen", "FS_checkOpExists", "FS_nextfd", "FS_getStreamChecked", "FS_getStream", "FS_createStream", "FS_closeStream", "FS_dupStream", "FS_doSetAttr", "FS_chrdev_stream_ops", "FS_major", "FS_minor", "FS_makedev", "FS_registerDevice", "FS_getDevice", "FS_getMounts", "FS_syncfs", "FS_mount", "FS_unmount", "FS_lookup", "FS_mknod", "FS_statfs", "FS_statfsStream", "FS_statfsNode", "FS_create", "FS_mkdir", "FS_mkdev", "FS_symlink", "FS_rename", "FS_rmdir", "FS_readdir", "FS_readlink", "FS_stat", "FS_fstat", "FS_lstat", "FS_doChmod", "FS_chmod", "FS_lchmod", "FS_fchmod", "FS_doChown", "FS_chown", "FS_lchown", "FS_fchown", "FS_doTruncate", "FS_truncate", "FS_ftruncate", "FS_utime", "FS_open", "FS_close", "FS_isClosed", "FS_llseek", "FS_read", "FS_write", "FS_mmap", "FS_msync", "FS_ioctl", "FS_writeFile", "FS_cwd", "FS_chdir", "FS_createDefaultDirectories", "FS_createDefaultDevices", "FS_createSpecialDirectories", "FS_createStandardStreams", "FS_staticInit", "FS_init", "FS_quit", "FS_findObject", "FS_analyzePath", "FS_createFile", "FS_forceLoadFile", "FS_absolutePath", "FS_createFolder", "FS_createLink", "FS_joinPath", "FS_mmapAlloc", "FS_standardizePath", "MEMFS", "TTY", "PIPEFS", "SOCKFS", "tempFixedLengthArray", "miniTempWebGLFloatBuffers", "miniTempWebGLIntBuffers", "heapObjectForWebGLType", "toTypedArrayIndex", "webgl_enable_WEBGL_multi_draw", "webgl_enable_EXT_polygon_offset_clamp", "webgl_enable_EXT_clip_control", "webgl_enable_WEBGL_polygon_mode", "GL", "emscriptenWebGLGet", "computeUnpackAlignedImageSize", "colorChannelsInGlTextureFormat", "emscriptenWebGLGetTexPixelData", "emscriptenWebGLGetUniform", "webglGetUniformLocation", "webglPrepareUniformLocationsBeforeFirstUse", "webglGetLeftBracePos", "emscriptenWebGLGetVertexAttrib", "__glGetActiveAttribOrUniform", "emscriptenWebGLGetBufferBinding", "emscriptenWebGLValidateMapBufferTarget", "AL", "GLUT", "EGL", "GLEW", "IDBStore", "runAndAbortIfError", "Asyncify", "Fibers", "emscriptenWebGLGetIndexed", "webgl_enable_WEBGL_draw_instanced_base_vertex_base_instance", "webgl_enable_WEBGL_multi_draw_instanced_base_vertex_base_instance", "allocateUTF8", "allocateUTF8OnStack", "print", "printErr", "jstoi_s", "IDBFS", "Fetch", "fetchDeleteCachedData", "fetchLoadCachedData", "fetchCacheData", "fetchXHR" ];
 
 unexportedSymbols.forEach(unexportedRuntimeSymbol);
 
 // End runtime exports
 // Begin JS library exports
+Module["_emscripten_pause_main_loop"] = _emscripten_pause_main_loop;
+
+Module["_emscripten_resume_main_loop"] = _emscripten_resume_main_loop;
+
 Module["incrementExceptionRefcount"] = incrementExceptionRefcount;
 
 Module["decrementExceptionRefcount"] = decrementExceptionRefcount;
@@ -10451,7 +11304,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  15415215: $0 => {
+  1085948: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -10459,7 +11312,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  15415440: () => {
+  1086173: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -10467,7 +11320,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15415587: () => {
+  1086320: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -10475,7 +11328,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  15415821: $0 => {
+  1086554: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -10499,11 +11352,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  15416373: () => {
+  1087106: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  15416441: ($0, $1, $2, $3) => {
+  1087174: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10545,7 +11398,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  15418134: ($0, $1, $2, $3) => {
+  1088867: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -10577,7 +11430,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  15419309: ($0, $1) => {
+  1090042: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -10596,7 +11449,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15419914: ($0, $1) => {
+  1090647: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -10610,7 +11463,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  15420403: $0 => {
+  1091136: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -10644,7 +11497,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  15421409: ($0, $1, $2) => {
+  1092142: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -10715,7 +11568,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  15422877: ($0, $1, $2, $3, $4) => {
+  1093610: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -10752,37 +11605,50 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  15423865: $0 => {
+  1094598: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  15423948: () => {
+  1094681: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  15424017: () => window.innerWidth,
-  15424047: () => window.innerHeight
+  1094750: () => window.innerWidth,
+  1094780: () => window.innerHeight
 };
 
-function setupDeviceOrientation() {
-  if (typeof window.DeviceOrientationEvent !== "undefined") {
-    if (typeof window.DeviceOrientationEvent.requestPermission === "function") {} else {
-      window.addEventListener("deviceorientation", event => {
-        Module.deviceAlpha = event.alpha;
-        Module.deviceBeta = event.beta;
-        Module.deviceGamma = event.gamma;
-      });
-    }
-  }
+function setAssetsLoaded() {
+  return Module.setAssetsLoaded();
 }
 
-function getDeviceGamma() {
-  return Module.deviceGamma || 0;
+function updateLoadingProgress(progress, total) {
+  return Module.updateLoadingProgress(progress, total);
 }
 
-function loadFromStorage(key) {
+function setupDeviceOrientationImpl() {}
+
+function isMobileImpl() {
+  var ua = navigator.userAgent || navigator.vendor || window.opera;
+  var isMobileDevice = /Mobi | Android | iPhone | iPad | iPod | Opera Mini | IEMobile/i.test(ua);
+  isMobileDevice = isMobileDevice || window.innerWidth <= 800 || window.innerHeight <= 800;
+  return isMobileDevice ? 1 : 0;
+}
+
+function getWindowWidthImpl() {
+  return window.screen.availWidth;
+}
+
+function getWindowHeightImpl() {
+  return window.screen.availHeight;
+}
+
+function pauseGameImpl(state) {
+  return Module.pauseGame(state);
+}
+
+function loadFromStorageImpl(key) {
   var val = localStorage.getItem(UTF8ToString(key));
   if (!val) return 0;
   var lengthBytes = lengthBytesUTF8(val) + 1;
@@ -10791,32 +11657,43 @@ function loadFromStorage(key) {
   return stringOnWasmHeap;
 }
 
-function getWindowWidth() {
-  return window.screen.availWidth;
+function getDeviceGammaImpl() {
+  return Module.deviceGamma || 0;
 }
 
-function getWindowHeight() {
-  return window.screen.availHeight;
+function playBuffer2(buffer_id) {
+  console.log(UTF8ToString(buffer_id));
+  var buf = Module.soundBuffers[UTF8ToString(buffer_id)];
+  var src = Module.sfxCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(Module.sfxCtx.destination);
+  src.start();
 }
 
 // Imports from the Wasm binary.
+var _assetsLoaded = Module["_assetsLoaded"] = makeInvalidEarlyAccess("_assetsLoaded");
+
+var _startGame = Module["_startGame"] = makeInvalidEarlyAccess("_startGame");
+
 var _setCanvasSize = Module["_setCanvasSize"] = makeInvalidEarlyAccess("_setCanvasSize");
 
 var _toggleFullscreen = Module["_toggleFullscreen"] = makeInvalidEarlyAccess("_toggleFullscreen");
 
 var _disableInput = Module["_disableInput"] = makeInvalidEarlyAccess("_disableInput");
 
-var _free = makeInvalidEarlyAccess("_free");
+var _restartGame = Module["_restartGame"] = makeInvalidEarlyAccess("_restartGame");
 
 var _zoomCamera = Module["_zoomCamera"] = makeInvalidEarlyAccess("_zoomCamera");
+
+var _free = makeInvalidEarlyAccess("_free");
 
 var _main = Module["_main"] = makeInvalidEarlyAccess("_main");
 
 var _malloc = makeInvalidEarlyAccess("_malloc");
 
-var _strerror = makeInvalidEarlyAccess("_strerror");
-
 var _fflush = makeInvalidEarlyAccess("_fflush");
+
+var _strerror = makeInvalidEarlyAccess("_strerror");
 
 var _emscripten_stack_get_end = makeInvalidEarlyAccess("_emscripten_stack_get_end");
 
@@ -10858,17 +11735,19 @@ var dynCall_vif = makeInvalidEarlyAccess("dynCall_vif");
 
 var dynCall_vi = makeInvalidEarlyAccess("dynCall_vi");
 
-var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
-
 var dynCall_vii = makeInvalidEarlyAccess("dynCall_vii");
-
-var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
 var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
 
-var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
+var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
+
+var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
 
 var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
+
+var dynCall_iijii = makeInvalidEarlyAccess("dynCall_iijii");
+
+var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
 
 var dynCall_iiiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiiii");
 
@@ -10876,15 +11755,15 @@ var dynCall_iiiiii = makeInvalidEarlyAccess("dynCall_iiiiii");
 
 var dynCall_viiiiii = makeInvalidEarlyAccess("dynCall_viiiiii");
 
-var dynCall_ji = makeInvalidEarlyAccess("dynCall_ji");
+var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
 
 var dynCall_iiiii = makeInvalidEarlyAccess("dynCall_iiiii");
+
+var dynCall_ji = makeInvalidEarlyAccess("dynCall_ji");
 
 var dynCall_jiji = makeInvalidEarlyAccess("dynCall_jiji");
 
 var dynCall_i = makeInvalidEarlyAccess("dynCall_i");
-
-var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
 
 var dynCall_iiiiiiiiii = makeInvalidEarlyAccess("dynCall_iiiiiiiiii");
 
@@ -10965,15 +11844,18 @@ var _asyncify_start_rewind = makeInvalidEarlyAccess("_asyncify_start_rewind");
 var _asyncify_stop_rewind = makeInvalidEarlyAccess("_asyncify_stop_rewind");
 
 function assignWasmExports(wasmExports) {
+  Module["_assetsLoaded"] = _assetsLoaded = createExportWrapper("assetsLoaded", 0);
+  Module["_startGame"] = _startGame = createExportWrapper("startGame", 1);
   Module["_setCanvasSize"] = _setCanvasSize = createExportWrapper("setCanvasSize", 2);
   Module["_toggleFullscreen"] = _toggleFullscreen = createExportWrapper("toggleFullscreen", 2);
   Module["_disableInput"] = _disableInput = createExportWrapper("disableInput", 1);
-  _free = createExportWrapper("free", 1);
+  Module["_restartGame"] = _restartGame = createExportWrapper("restartGame", 0);
   Module["_zoomCamera"] = _zoomCamera = createExportWrapper("zoomCamera", 1);
+  _free = createExportWrapper("free", 1);
   Module["_main"] = _main = createExportWrapper("__main_argc_argv", 2);
   _malloc = createExportWrapper("malloc", 1);
-  _strerror = createExportWrapper("strerror", 1);
   _fflush = createExportWrapper("fflush", 1);
+  _strerror = createExportWrapper("strerror", 1);
   _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
   _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
   _emscripten_builtin_memalign = createExportWrapper("emscripten_builtin_memalign", 2);
@@ -10994,20 +11876,21 @@ function assignWasmExports(wasmExports) {
   dynCalls["vifi"] = dynCall_vifi = createExportWrapper("dynCall_vifi", 4);
   dynCalls["vif"] = dynCall_vif = createExportWrapper("dynCall_vif", 3);
   dynCalls["vi"] = dynCall_vi = createExportWrapper("dynCall_vi", 2);
-  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
   dynCalls["vii"] = dynCall_vii = createExportWrapper("dynCall_vii", 3);
-  dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
   dynCalls["viii"] = dynCall_viii = createExportWrapper("dynCall_viii", 4);
-  dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
+  dynCalls["iii"] = dynCall_iii = createExportWrapper("dynCall_iii", 3);
+  dynCalls["viiii"] = dynCall_viiii = createExportWrapper("dynCall_viiii", 5);
   dynCalls["v"] = dynCall_v = createExportWrapper("dynCall_v", 1);
+  dynCalls["iijii"] = dynCall_iijii = createExportWrapper("dynCall_iijii", 5);
+  dynCalls["iiii"] = dynCall_iiii = createExportWrapper("dynCall_iiii", 4);
   dynCalls["iiiiiiiii"] = dynCall_iiiiiiiii = createExportWrapper("dynCall_iiiiiiiii", 9);
   dynCalls["iiiiii"] = dynCall_iiiiii = createExportWrapper("dynCall_iiiiii", 6);
   dynCalls["viiiiii"] = dynCall_viiiiii = createExportWrapper("dynCall_viiiiii", 7);
-  dynCalls["ji"] = dynCall_ji = createExportWrapper("dynCall_ji", 2);
+  dynCalls["viiiii"] = dynCall_viiiii = createExportWrapper("dynCall_viiiii", 6);
   dynCalls["iiiii"] = dynCall_iiiii = createExportWrapper("dynCall_iiiii", 5);
+  dynCalls["ji"] = dynCall_ji = createExportWrapper("dynCall_ji", 2);
   dynCalls["jiji"] = dynCall_jiji = createExportWrapper("dynCall_jiji", 4);
   dynCalls["i"] = dynCall_i = createExportWrapper("dynCall_i", 1);
-  dynCalls["viiiii"] = dynCall_viiiii = createExportWrapper("dynCall_viiiii", 6);
   dynCalls["iiiiiiiiii"] = dynCall_iiiiiiiiii = createExportWrapper("dynCall_iiiiiiiiii", 10);
   dynCalls["viiiiiiii"] = dynCall_viiiiiiii = createExportWrapper("dynCall_viiiiiiii", 9);
   dynCalls["iiiiiii"] = dynCall_iiiiiii = createExportWrapper("dynCall_iiiiiii", 7);
@@ -11061,7 +11944,7 @@ var wasmImports = {
   /** @export */ __resumeException: ___resumeException,
   /** @export */ __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */ __syscall_fstat64: ___syscall_fstat64,
-  /** @export */ __syscall_getcwd: ___syscall_getcwd,
+  /** @export */ __syscall_getdents64: ___syscall_getdents64,
   /** @export */ __syscall_ioctl: ___syscall_ioctl,
   /** @export */ __syscall_lstat64: ___syscall_lstat64,
   /** @export */ __syscall_newfstatat: ___syscall_newfstatat,
@@ -11094,9 +11977,11 @@ var wasmImports = {
   /** @export */ emscripten_asm_const_int: _emscripten_asm_const_int,
   /** @export */ emscripten_asm_const_int_sync_on_main_thread: _emscripten_asm_const_int_sync_on_main_thread,
   /** @export */ emscripten_asm_const_ptr_sync_on_main_thread: _emscripten_asm_const_ptr_sync_on_main_thread,
+  /** @export */ emscripten_cancel_main_loop: _emscripten_cancel_main_loop,
   /** @export */ emscripten_date_now: _emscripten_date_now,
   /** @export */ emscripten_exit_fullscreen: _emscripten_exit_fullscreen,
   /** @export */ emscripten_exit_pointerlock: _emscripten_exit_pointerlock,
+  /** @export */ emscripten_fetch_free: _emscripten_fetch_free,
   /** @export */ emscripten_get_device_pixel_ratio: _emscripten_get_device_pixel_ratio,
   /** @export */ emscripten_get_element_css_size: _emscripten_get_element_css_size,
   /** @export */ emscripten_get_gamepad_status: _emscripten_get_gamepad_status,
@@ -11382,11 +12267,10 @@ var wasmImports = {
   /** @export */ emscripten_glViewport: _emscripten_glViewport,
   /** @export */ emscripten_glWaitSync: _emscripten_glWaitSync,
   /** @export */ emscripten_has_asyncify: _emscripten_has_asyncify,
-  /** @export */ emscripten_pause_main_loop: _emscripten_pause_main_loop,
+  /** @export */ emscripten_is_main_browser_thread: _emscripten_is_main_browser_thread,
   /** @export */ emscripten_request_fullscreen_strategy: _emscripten_request_fullscreen_strategy,
   /** @export */ emscripten_request_pointerlock: _emscripten_request_pointerlock,
   /** @export */ emscripten_resize_heap: _emscripten_resize_heap,
-  /** @export */ emscripten_run_script: _emscripten_run_script,
   /** @export */ emscripten_sample_gamepad_data: _emscripten_sample_gamepad_data,
   /** @export */ emscripten_set_beforeunload_callback_on_thread: _emscripten_set_beforeunload_callback_on_thread,
   /** @export */ emscripten_set_blur_callback_on_thread: _emscripten_set_blur_callback_on_thread,
@@ -11415,6 +12299,7 @@ var wasmImports = {
   /** @export */ emscripten_set_wheel_callback_on_thread: _emscripten_set_wheel_callback_on_thread,
   /** @export */ emscripten_set_window_title: _emscripten_set_window_title,
   /** @export */ emscripten_sleep: _emscripten_sleep,
+  /** @export */ emscripten_start_fetch: _emscripten_start_fetch,
   /** @export */ environ_get: _environ_get,
   /** @export */ environ_sizes_get: _environ_sizes_get,
   /** @export */ exit: _exit,
@@ -11422,23 +12307,28 @@ var wasmImports = {
   /** @export */ fd_read: _fd_read,
   /** @export */ fd_seek: _fd_seek,
   /** @export */ fd_write: _fd_write,
-  /** @export */ getDeviceGamma,
-  /** @export */ getWindowHeight,
-  /** @export */ getWindowWidth,
+  /** @export */ getDeviceGammaImpl,
+  /** @export */ getWindowHeightImpl,
+  /** @export */ getWindowWidthImpl,
   /** @export */ glActiveTexture: _glActiveTexture,
   /** @export */ glAttachShader: _glAttachShader,
   /** @export */ glBindBuffer: _glBindBuffer,
   /** @export */ glBindFramebuffer: _glBindFramebuffer,
   /** @export */ glBindTexture: _glBindTexture,
   /** @export */ glBindVertexArray: _glBindVertexArray,
+  /** @export */ glBindVertexArrayOES: _glBindVertexArrayOES,
+  /** @export */ glBlendEquation: _glBlendEquation,
+  /** @export */ glBlendEquationSeparate: _glBlendEquationSeparate,
   /** @export */ glBlendFunc: _glBlendFunc,
   /** @export */ glBlendFuncSeparate: _glBlendFuncSeparate,
+  /** @export */ glBlitFramebuffer: _glBlitFramebuffer,
   /** @export */ glBufferData: _glBufferData,
   /** @export */ glBufferSubData: _glBufferSubData,
   /** @export */ glCheckFramebufferStatus: _glCheckFramebufferStatus,
   /** @export */ glClear: _glClear,
   /** @export */ glClearColor: _glClearColor,
   /** @export */ glCompileShader: _glCompileShader,
+  /** @export */ glCopyTexImage2D: _glCopyTexImage2D,
   /** @export */ glCreateProgram: _glCreateProgram,
   /** @export */ glCreateShader: _glCreateShader,
   /** @export */ glDeleteBuffers: _glDeleteBuffers,
@@ -11447,7 +12337,11 @@ var wasmImports = {
   /** @export */ glDeleteShader: _glDeleteShader,
   /** @export */ glDeleteTextures: _glDeleteTextures,
   /** @export */ glDeleteVertexArrays: _glDeleteVertexArrays,
+  /** @export */ glDeleteVertexArraysOES: _glDeleteVertexArraysOES,
+  /** @export */ glDetachShader: _glDetachShader,
+  /** @export */ glDisable: _glDisable,
   /** @export */ glDisableVertexAttribArray: _glDisableVertexAttribArray,
+  /** @export */ glDrawArraysInstanced: _glDrawArraysInstanced,
   /** @export */ glDrawElements: _glDrawElements,
   /** @export */ glDrawElementsInstanced: _glDrawElementsInstanced,
   /** @export */ glEnable: _glEnable,
@@ -11457,19 +12351,24 @@ var wasmImports = {
   /** @export */ glGenFramebuffers: _glGenFramebuffers,
   /** @export */ glGenTextures: _glGenTextures,
   /** @export */ glGenVertexArrays: _glGenVertexArrays,
+  /** @export */ glGenVertexArraysOES: _glGenVertexArraysOES,
   /** @export */ glGenerateMipmap: _glGenerateMipmap,
+  /** @export */ glGetAttribLocation: _glGetAttribLocation,
+  /** @export */ glGetIntegerv: _glGetIntegerv,
   /** @export */ glGetProgramInfoLog: _glGetProgramInfoLog,
   /** @export */ glGetProgramiv: _glGetProgramiv,
   /** @export */ glGetShaderInfoLog: _glGetShaderInfoLog,
   /** @export */ glGetShaderiv: _glGetShaderiv,
   /** @export */ glGetString: _glGetString,
   /** @export */ glGetUniformLocation: _glGetUniformLocation,
+  /** @export */ glIsEnabled: _glIsEnabled,
+  /** @export */ glIsProgram: _glIsProgram,
   /** @export */ glLinkProgram: _glLinkProgram,
   /** @export */ glPixelStorei: _glPixelStorei,
+  /** @export */ glScissor: _glScissor,
   /** @export */ glShaderSource: _glShaderSource,
   /** @export */ glTexImage2D: _glTexImage2D,
   /** @export */ glTexParameteri: _glTexParameteri,
-  /** @export */ glTexSubImage2D: _glTexSubImage2D,
   /** @export */ glUniform1f: _glUniform1f,
   /** @export */ glUniform1i: _glUniform1i,
   /** @export */ glUniform2fv: _glUniform2fv,
@@ -11478,6 +12377,7 @@ var wasmImports = {
   /** @export */ glUniformMatrix4fv: _glUniformMatrix4fv,
   /** @export */ glUseProgram: _glUseProgram,
   /** @export */ glVertexAttribDivisor: _glVertexAttribDivisor,
+  /** @export */ glVertexAttribIPointer: _glVertexAttribIPointer,
   /** @export */ glVertexAttribPointer: _glVertexAttribPointer,
   /** @export */ glViewport: _glViewport,
   /** @export */ invoke_diii,
@@ -11506,8 +12406,13 @@ var wasmImports = {
   /** @export */ invoke_viiiiiii,
   /** @export */ invoke_viiiiiiiiii,
   /** @export */ invoke_viiiiiiiiiiiiiii,
-  /** @export */ loadFromStorage,
-  /** @export */ setupDeviceOrientation
+  /** @export */ isMobileImpl,
+  /** @export */ loadFromStorageImpl,
+  /** @export */ pauseGameImpl,
+  /** @export */ playBuffer2,
+  /** @export */ setAssetsLoaded,
+  /** @export */ setupDeviceOrientationImpl,
+  /** @export */ updateLoadingProgress
 };
 
 var wasmExports;
@@ -11581,10 +12486,10 @@ function invoke_j(index) {
   }
 }
 
-function invoke_ii(index, a1) {
+function invoke_vii(index, a1, a2) {
   var sp = stackSave();
   try {
-    return dynCall_ii(index, a1);
+    dynCall_vii(index, a1, a2);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -11592,10 +12497,10 @@ function invoke_ii(index, a1) {
   }
 }
 
-function invoke_vii(index, a1, a2) {
+function invoke_viii(index, a1, a2, a3) {
   var sp = stackSave();
   try {
-    dynCall_vii(index, a1, a2);
+    dynCall_viii(index, a1, a2, a3);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -11614,10 +12519,10 @@ function invoke_vi(index, a1) {
   }
 }
 
-function invoke_iiiiiii(index, a1, a2, a3, a4, a5, a6) {
+function invoke_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7) {
   var sp = stackSave();
   try {
-    return dynCall_iiiiiii(index, a1, a2, a3, a4, a5, a6);
+    dynCall_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -11629,6 +12534,39 @@ function invoke_iiiiii(index, a1, a2, a3, a4, a5) {
   var sp = stackSave();
   try {
     return dynCall_iiiiii(index, a1, a2, a3, a4, a5);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiii(index, a1, a2, a3, a4, a5) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiii(index, a1, a2, a3, a4, a5);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_ii(index, a1) {
+  var sp = stackSave();
+  try {
+    return dynCall_ii(index, a1);
+  } catch (e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiii(index, a1, a2, a3, a4, a5, a6) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiii(index, a1, a2, a3, a4, a5, a6);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -11651,17 +12589,6 @@ function invoke_iiiiid(index, a1, a2, a3, a4, a5) {
   var sp = stackSave();
   try {
     return dynCall_iiiiid(index, a1, a2, a3, a4, a5);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viii(index, a1, a2, a3) {
-  var sp = stackSave();
-  try {
-    dynCall_viii(index, a1, a2, a3);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -11747,17 +12674,6 @@ function invoke_i(index) {
   }
 }
 
-function invoke_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7) {
-  var sp = stackSave();
-  try {
-    dynCall_viiiiiii(index, a1, a2, a3, a4, a5, a6, a7);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
 function invoke_iiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) {
   var sp = stackSave();
   try {
@@ -11784,17 +12700,6 @@ function invoke_viiiiiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10,
   var sp = stackSave();
   try {
     dynCall_viiiiiiiiiiiiiii(index, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiiii(index, a1, a2, a3, a4, a5) {
-  var sp = stackSave();
-  try {
-    dynCall_viiiii(index, a1, a2, a3, a4, a5);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
@@ -11861,7 +12766,7 @@ function run(args = arguments_) {
     preMain();
     Module["onRuntimeInitialized"]?.();
     consumedModuleProp("onRuntimeInitialized");
-    var noInitialRun = Module["noInitialRun"] || false;
+    var noInitialRun = Module["noInitialRun"] || true;
     if (!noInitialRun) callMain(args);
     postRun();
   }
@@ -11930,3 +12835,51 @@ function preInit() {
 preInit();
 
 run();
+
+// end include: postamble.js
+// include: /home/smutekj/projects/languagePlatformer/patchBrowserUpdateScreen.js
+if (typeof Browser != "undefined") {
+  Browser.updateCanvasDimensions = (canvas, wNative, hNative) => {
+    if (wNative && hNative) {
+      canvas.widthNative = wNative;
+      canvas.heightNative = hNative;
+    } else {
+      wNative = canvas.width;
+      hNative = canvas.height;
+    }
+    var w = wNative;
+    var h = hNative;
+    if (Module["forcedAspectRatio"] > 0) {
+      if (w / h < Module["forcedAspectRatio"]) {
+        w = Math.round(h * Module["forcedAspectRatio"]);
+      } else {
+        h = Math.round(w / Module["forcedAspectRatio"]);
+      }
+    }
+    if (((document["fullscreenElement"] || document["mozFullScreenElement"] || document["msFullscreenElement"] || document["webkitFullscreenElement"] || document["webkitCurrentFullScreenElement"]) === canvas.parentNode) && (typeof screen != "undefined")) {
+      var factor = Math.min(screen.width / w, screen.height / h);
+      w = Math.round(w * factor);
+      h = Math.round(h * factor);
+    }
+    if (Browser.resizeCanvas) {
+      if (canvas.width != w) canvas.width = w;
+      if (canvas.height != h) canvas.height = h;
+      if (typeof canvas.style != "undefined") {
+        canvas.style.removeProperty("width");
+        canvas.style.removeProperty("height");
+      }
+    } else {
+      if (canvas.width != wNative) canvas.width = wNative;
+      if (canvas.height != hNative) canvas.height = hNative;
+      if (typeof canvas.style != "undefined") {
+        if (w != wNative || h != hNative) {
+          canvas.style.setProperty("width", w + "px", "important");
+          canvas.style.setProperty("height", h + "px", "important");
+        } else {
+          canvas.style.removeProperty("width");
+          canvas.style.removeProperty("height");
+        }
+      }
+    }
+  };
+}

@@ -1,24 +1,106 @@
 import { useRef, useEffect, useState, act } from 'react'
-import './Game.css'
+import './style/Game.css'
+import { type ExerciseLine } from './Exercise.js';
+import { PracticeExam } from './Exam.tsx'
+import LoadingScreen from './LoadingScreen.tsx';
+import { MainMenu, GameSelection, PauseState, Settings } from './MainMenu.tsx';
+
+const GameState = {
+    LoadingAssets: "LOADING" as const,
+    Running: "RUNNING" as const,
+    Paused: "PAUSED" as const,
+    Exam: "EXAM" as const,
+    Menu: "MENU" as const,
+    Settings: "SETTINGS" as const,
+    NewGame: "NEWGAME" as const,
+};
+export type GameState = typeof GameState[keyof typeof GameState];
+
+export type WordGroup = {
+    group_name: string;
+    group_id: number;
+    excercises: Array<ExerciseLine>;
+    words_score: Map<string, number>;
+    progress: number;
+};
+
+async function uploadExercisesToDb(topics: Array<string>) {
+    const FS = (window as any).FS;
+    const Module = (window as any).Module;
+    if (!Module) { return; }
+    if (!FS?.analyzePath('/execDb').exists) {
+        FS?.mkdir("/execDb");
+    }
+
+    topics.forEach((topic) => {
+/*         getItem<Array<ExerciseLine>>(topic).then((exercises) => {
+            if (exercises) {
+                FS?.writeFile("/execDb/" + topic + ".json", JSON.stringify({ [topic]: [...exercises] }));
+            }
+        }
+        ) */;
+    });
+
+    await new Promise<void>((resolve, reject) => {
+        FS?.syncfs(false, (err: any) => { err ? reject(err) : resolve() });
+    });
+}
 
 type GameProps = {
     setAppState: (state: number) => void;
     visible: boolean;
+    selectedTopics: string[];
+    Module: any;
 };
 
-function Game({ setAppState, visible }: GameProps) {
+function isMobile(): boolean {
+    var ua = navigator.userAgent || navigator.vendor;
+    // Check for common mobile identifiers
+    var isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(ua);
+    // isMobileDevice = isMobileDevice;
+    return isMobileDevice ? true : false;
+}
 
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+function ensureCanvasHasSize(Module: any, canvas: HTMLCanvasElement) {
+    // Wait for browser to apply fullscreen layout
+    requestAnimationFrame(() => {
+        let width = canvas.clientWidth || window.innerWidth;
+        let height = canvas.clientHeight || window.innerHeight;
+
+        // Sometimes layout isn’t done yet — wait one more frame if zero
+        if (width === 0 || height === 0) {
+            requestAnimationFrame(() => {
+                width = canvas.clientWidth || window.innerWidth;
+                height = canvas.clientHeight || window.innerHeight;
+                applyCanvasSize(Module, canvas, width, height);
+            });
+        } else {
+            applyCanvasSize(Module, canvas, width, height);
+        }
+    });
+}
+
+function applyCanvasSize(Module: any, canvas: HTMLCanvasElement, width: number, height: number) {
+    console.log(`Applying canvas size: ${width} x ${height}`);
+    // canvas.width = width;
+    // canvas.height = height;
+    Module?._setCanvasSize?.(width, height);
+}
+
+function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
+
+    const [gameStarted, setGameStarted] = useState<boolean>(false);
+    const [gameState, setGameState] = useState<GameState>(GameState.LoadingAssets);
 
     //! set canvas size when it changes to visible
     useEffect(() => {
 
-        const Module = (window as any).Module;
-        if (!Module) { return; }
+        if (!Module) { console.log("Module does not exist!"); return; }
 
-        Module?._disableInput?.(!visible);
+        Module._disableInput?.(!visible);
 
         if (!visible) {
+
             // Disable Emscripten's global keyboard event capture
             if (Module["SDL"] && Module["SDL"].events) {
                 document.removeEventListener('keydown', Module["SDL"].events.keydownCapture, true);
@@ -33,37 +115,73 @@ function Game({ setAppState, visible }: GameProps) {
                 document.addEventListener('keypress', Module["SDL"].events.keypressCapture, true);
             }
         }
-        if (visible && canvasRef.current) {
-            const canvas = canvasRef.current;
 
-            canvas.scrollIntoView({ behavior: "smooth" })
-            canvas.focus();
-            var scale = 1;//window.devicePixelRatio; // Get DPR
+        const canvas = (document.getElementById("canvas") as HTMLCanvasElement);
+        if (visible && canvas) {
+            // canvas.scrollIntoView({ behavior: "instant" })
+            // canvas.focus();
+            document.addEventListener("touchstart", () => {
+                if (!Module.sfxCtx) {
+                    Module.sfxCtx = new AudioContext({
+                        latencyHint: "interactive"
+                    });
+                    console.log("baseLatency:", Module.sfxCtx.baseLatency);
+                    console.log("outputLatency:", Module.sfxCtx.outputLatency);
+                }
+            }, { once: true });
 
-            // canvas.style = "width: 95vw; height: 95vh";
-            // Set the canvas element's CSS size
-            var elementWidth = canvas.clientWidth;
-            var elementHeight = canvas.clientHeight;
-            if (typeof Module !== 'undefined' && Module.canvas && Module.canvas === canvas) {
-                canvas.width = elementWidth * scale;
-                canvas.height = elementHeight * scale;
+            if (!gameStarted) {// If first time running the game, we have to load assets and call main
+                if (canvas) {
+                    setGameStarted(true);
+                    // screen.orientation.("landscape");
+                    screen.orientation.addEventListener("change", () => {
+                        console.log(`The orientation of the screen is: ${screen.orientation}`);
+                    });
+                    // if (!window)
+                    Module["sfxCtx"] = new AudioContext({ "latencyHint": "interactive" });
+                    Module["soundBuffers"] = {};
+                    uploadExercisesToDb(selectedTopics).then(() => {
+                        fetch("Resources.json")
+                            .then((response) => {
+                                response.json().then((resource_registry) => {
+
+                                    for (const sound_key in resource_registry["Sound"]) {
+                                        const sound_json = resource_registry["Sound"][sound_key];
+                                        fetch(sound_json["path"])
+                                            .then(res => res.arrayBuffer())
+                                            .then(buf => Module.sfxCtx.decodeAudioData(buf))
+                                            .then(decoded => Module.soundBuffers[sound_key] = decoded);
+                                    }
+                                });
+                            });
+                        // Module.requestFullscreen(false, false);
+                        Module.callMain();
+                    });
+                }
+            } else { //! otherwise just make it visible by resizing canvas
+                console.log("changed canvas from browser to:\nw: " + canvas.width + " h " + canvas.height)
+                Module._setCanvasSize?.(canvas.clientWidth, canvas.clientHeight);
+                
+                // Module.requestFullscreen(false, false);
+                Module._emscripten_resume_main_loop?.();
             }
-            console.log("changed canvas from browser to:\nw: " + canvas.width + " h " + canvas.height)
-            Module?._setCanvasSize?.(canvas.width, canvas.height);
-            Module?._emscripten_resume_main_loop?.();
-
-        } else if (canvasRef.current) {
-            // (window as any).Module?._emscripten_pause_main_loop?.();
+        } else if (canvas) {
+            //! reenable scrolling of root
+            document.body.classList.remove("no_scrolling");
+            if (Module._emscripten_pause_main_loop) {
+                console.log("PAUSED MAIN LOOP!");
+                Module._emscripten_pause_main_loop();
+            }
         }
     }, [visible])
 
     useEffect(() => {
-        if (!canvasRef.current) return;
+        const canvas = document.getElementById("canvas");
+        const container = document.getElementById("canvasContainer");
+        if (!canvas) return;
 
-        const canvasEl = document.getElementById("canvas");
-        canvasEl?.focus();
-        console.log(canvasEl);
-        if (!document.getElementById("script")) {
+        // canvasEl?.focus();
+        if (!gameStarted) {
 
             const events = ['keydown', 'keypress', 'keyup'];
             events.forEach((eventName) => {
@@ -75,69 +193,109 @@ function Game({ setAppState, visible }: GameProps) {
                 }, true);
             });
 
-            //! create otput in Module
-            (window as any).Module = {
-                canvas: canvasRef.current,
-                print: (text: string) => {
-                    const output = document.getElementById("output") as HTMLTextAreaElement;
-                    if (output) output.value += text + "\n";
-                },
-                printErr: (text: string) => console.error(text),
-            };
+            if (canvas && container && canvas.parentNode !== container) {
+                container.appendChild(canvas);  // move canvas inside React layout
+            }
+            Module.canvas = canvas; //Set canvas to module
+
             //! allows us to change state from withing c++ app
-            (window as any).Module.setAppState = (state: number) => {
+            Module.setAppState = (state: number) => {
                 setAppState(state);
             };
-            (window as any).Module["onExit"] = () => {
-                setAppState(0);
-            };
 
-            const script = document.createElement("script");
-            script.id = "script";
-            script.src = `${import.meta.env.BASE_URL}projectx.js`;
-            script.async = true;
-            document.body.appendChild(script);
+            Module.setAssetsLoaded = () => {
+                setGameState("MENU");
+                setGameStarted(true);
+            }; //! this will be called by game to know when it can start
+
+            Module.pauseGame = (state: number) => {
+
+                requestAnimationFrame(() => {
+                    if (!document.fullscreenElement) {
+                        setGameState("EXAM");
+                    } else {
+                        document.exitFullscreen();
+                        requestAnimationFrame(() => {
+                            setGameState("EXAM");
+                        })
+                    }
+                    requestAnimationFrame(() => {
+                        console.log("PAUSING MAIN LOOP");
+                        Module._emscripten_pause_main_loop();
+                    });
+                });
+            };
         }
 
-        return () => {
-            // document.body.removeChild(script);
-        };
+        return () => { };
     }, []);
 
-    function onZoomOutClick() {
+    function onGameRestart() {
         const Module = (window as any).Module;
-        Module?._zoomCamera(1. / 0.9);
-    }
-    function onZoomInClick() {
-        const Module = (window as any).Module;
-        Module?._zoomCamera(0.9);
+        Module?._restartGame();
     }
     function onFullScreenToggle() {
-        const Module = (window as any).Module;
-        Module?._toggleFullscreen();
-        // Module?.requestFullscreen(false, true);
+        const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+        if (!canvas) return;
+        // Module?._toggleFullscreen();
+        ensureCanvasHasSize(Module, canvas);
+        Module?.requestFullscreen(false, true);
         console.log("TOGGLING FULLSCREEN!");
     }
 
+    useEffect(() => {
+        window.history.pushState(gameState, "", "");
+        const handleBack = (e: PopStateEvent) => {
+            queueMicrotask(() => {
+                const prevState = gameState;
+                if (prevState === "MENU") { setAppState(0); }
+                else if (prevState === "RUNNING") { setGameState("PAUSED"); Module._emscripten_pause_main_loop(); }
+                else if (prevState === "PAUSED") { setAppState(0); }
+                else { window.history.back(); }
+            });
+        };
+        window.addEventListener("popstate", handleBack);
+
+        if (gameState === GameState.Running) {
+            Module._emscripten_resume_main_loop();
+        }
+        return () => window.removeEventListener("popstate", handleBack);
+    }, [gameState])
+
+
+    useEffect(() => {
+        const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+        if (!canvas) { return; }
+
+        if (gameState === GameState.Running) {
+            canvas.style.position = '';
+            canvas.style.left = '';
+        }
+        else {
+            canvas.style.position = 'absolute';
+            canvas.style.left = window.innerWidth.toString() + "px";
+            Module._emscripten_pause_main_loop();
+        }
+    }, [gameState]);
+
     return (
+
         <div style={{ display: visible ? "block" : "none" }}>
-            {/* <div className="spinner" id='spinner'></div> */}
-            {/* <div className="emscripten" id="status">Downloading...</div> */}
-            <div style={{ "display": "flex", "flexDirection": "row", "justifyContent": "center" }}>
-                <div className="zoomButton" onClick={onZoomOutClick}>-</div>
-                <div className="zoomButton" onClick={onZoomInClick}>+</div>
-            </div>
-            <span id='controls'>
-                <span><input type="checkbox" id="resize" />Resize canvas</span>
-                <span><input type="button" id="fullscreenButton" onClick={onFullScreenToggle} value="Fullscreen" /></span>
-            </span>
-            <div className="emscripten_border">
-                {/* onContextMenu={(event) => event.preventDefault()} */}
-                <canvas className="emscripten" ref={canvasRef} id="canvas"
-                    onContextMenu={(event) => event.preventDefault()} tabIndex={-1}></canvas>
-            </div>
-            <textarea id="output" rows={8}></textarea>
-        </div>
+            {/* {<div style={{ "display": "flex", "flexDirection": "row", "justifyContent": "center" }}> */}
+                {/* <div className="textButton" id="fullscreenButton" onClick={onFullScreenToggle}>Fullscreen</div> */}
+            {/* </div>} */}
+
+            {gameState === GameState.Menu &&
+                <MainMenu setAppState={setAppState} setGameState={setGameState} Module={Module} />}
+
+            {gameState === GameState.LoadingAssets && <LoadingScreen Module={Module} />}
+            {gameState === GameState.NewGame && <GameSelection setGameState={setGameState} Module={Module} />}
+            {gameState === GameState.Paused && <PauseState setGameState={setGameState} />}
+            {gameState === GameState.Settings && <Settings setGameState={setGameState} entryState={"MENU"} Module={Module} />}
+            {gameState === GameState.Exam && <PracticeExam setGameState={setGameState} questions_count={1} />}
+
+            <div id="canvasContainer" style={{ width: "100%", height: "100%" }}></div>
+        </div >
     )
 }
 

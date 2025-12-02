@@ -1,0 +1,26 @@
+.excerciseRect {
+    border-style: solid;
+    border-radius: 10px;
+    height: 100px;
+    display: block;
+    margin: auto;
+    margin: 3px;
+    padding: 2%;
+    align-content: center;
+    border-width: medium;
+}
+
+.exerciseInput {
+    border-style: solid;
+}
+
+.excerciseImage {
+    border-style: none;
+    display: block;
+    margin: auto;
+    align-content: center;
+    width: 90%;
+    /* or any custom size */
+    height: 90%;
+    object-fit: contain;
+}

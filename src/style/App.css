@@ -1,0 +1,152 @@
+
+#root {
+  width: 95vw;
+  margin: 0 auto;
+  /* padding: 2rem; */
+  text-align: center;
+}
+
+.flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  /* wrap items to next line */
+  gap: 1rem;
+  /* spacing between items */
+}
+
+.flex-container>* {
+  flex: 1 1 200px;
+  /* grow, shrink, base width 200px */
+  max-width: 250px;
+  /* optional max width */
+}
+
+.summaryTableHeader {
+  border: 1px solid #ccc;
+  padding: 4px;
+  text-align: center
+}
+
+.summaryTableRow {
+  border: 1px solid #ccc;
+  padding: 4px;
+}
+
+
+.navigationContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding-top: 20px;
+}
+
+@media (max-width: 480px) {
+  .navigationContainer {
+    justify-content: stretch;
+    gap: 0.5rem;
+  }
+  .navigationContainer button {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.topicSelectionContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .topicSelectionContainer {
+    justify-content: stretch;
+    gap: 0.5rem;
+  }
+  .topicSelectionContainer div {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.topicSelectionRect  {
+    width: 20%;
+    border: 2px solid;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: bolder;
+}
+
+.correct {
+  animation: fadeIn 1.0s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.swapAnimation {
+  animation: comeFromLeft 500ms;
+}
+
+.swapAnimationOut {
+  animation: comeFromLeft 500ms;
+}
+
+.swapAnimation2 {
+  animation: comeFromRight 500ms;
+}
+
+.fadeIn {
+  animation: appear 500ms;
+}
+
+.navBar{
+  margin: 10px;
+};
+
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes comeFromLeft {
+  to {
+    opacity: 0;
+    transform: translateX(100vw);
+  }
+
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes comeFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(-100vw);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+

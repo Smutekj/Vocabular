@@ -1,0 +1,143 @@
+
+.canvasOutside {
+  position: absolute;
+  left: -2000px;
+  display: block;
+}
+
+.emscripten {
+  padding-right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+div.emscripten {
+  text-align: center;
+}
+
+div.emscripten_border {
+  border: 1px solid black;
+}
+
+/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+
+canvas.emscripten {
+  border: 0px none;
+  width: 95vw;
+  height: 100vh;
+  background-color: black;
+}
+
+.no_scrolling {
+  /* overflow: hidden; */
+}
+
+#emscripten_logo {
+  display: inline-block;
+  margin: 0;
+  padding: 6px;
+  width: 265px;
+}
+
+
+
+#status {
+  display: inline-block;
+  vertical-align: top;
+  margin-top: 30px;
+  margin-left: 20px;
+  font-weight: bold;
+  color: rgb(120, 120, 120);
+}
+
+#progress {
+  height: 20px;
+  width: 300px;
+}
+
+#controls {
+  display: inline-block;
+  float: right;
+  vertical-align: top;
+  margin-top: 30px;
+  margin-right: 20px;
+}
+
+#output {
+  width: 100%;
+  height: 200px;
+  margin: 0 auto;
+  margin-top: 10px;
+  border-left: 0px;
+  border-right: 0px;
+  padding-left: 0px;
+  padding-right: 0px;
+  display: block;
+  background-color: black;
+  color: white;
+  font-family: 'Lucida Console', Monaco, monospace;
+  outline: none;
+}
+
+
+.zoomButton {
+  width: 60px;
+  /* makes it square — adjust as needed */
+  height: 60px;
+  font-size: 50px;
+  font-weight: 500;
+  border: 5px solid yellow;
+  background-color: black;
+  /* optional — gives contrast */
+  color: yellow;
+  /* optional — matches border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  /* optional — rounded edges */
+  cursor: pointer;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.zoomButton:hover {
+  transform: scale(1.1);
+  /* slight zoom */
+  background-color: yellow;
+  color: black;
+  box-shadow: 0 0 20px yellow;
+  /* glowing border effect */
+}
+
+.textButton {
+  width: fit-content;
+  height: 60px;
+  font-size: 30px;
+  font-weight: 500;
+  border: 5px solid yellow;
+  background-color: black;
+  /* optional — gives contrast */
+  color: yellow;
+  /* optional — matches border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  /* optional — rounded edges */
+  cursor: pointer;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.textButton:hover {
+  transform: scale(1.1);
+  /* slight zoom */
+  background-color: yellow;
+  color: black;
+  box-shadow: 0 0 20px yellow;
+  /* glowing border effect */
+}

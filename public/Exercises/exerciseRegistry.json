@@ -1,0 +1,66 @@
+[
+    {
+        "name":{
+            "cz": "Přídavná Jména",
+            "en": "Adjectives",
+            "de": "Adjektive"
+        },
+        "url": "Adjectives.csv"
+    }, 
+    {
+        "name":{
+            "cz": "Ovoce a Zelenina",
+            "en": "Fruits And Vegetables",
+            "de": "Obst und Gemüse"
+        },
+        "url": "FruitsAndVegetables.csv"
+    },
+    {
+        "name":{
+            "cz": "Lidské Tělo 1",
+            "en": "Human Body 1",
+            "de": "der Körper 1"
+        },
+        "url": "HumanBody1.csv"
+    },
+    {
+        "name":{
+            "cz": "Lidské Tělo 2",
+            "en": "Human Body 2",
+            "de": "der Körper 2"
+        },
+        "url": "HumanBody2.csv"
+    },
+    {
+        "name":{
+            "cz": "Oblečení",
+            "en": "Clothing",
+            "de": "Kleidung"
+        },
+        "url": "Kleidung.csv"
+    },
+    {
+        "name":{
+            "cz": "Nářadí",
+            "en": "Hand Tools",
+            "de": "Werkzeug"
+        },
+        "url": "Werkzeug.csv"
+    },
+    {
+        "name":{
+            "cz": "Finance",
+            "en": "Finances",
+            "de": "Finanzen"
+        },
+        "url": "Finances.csv"
+    },
+    {
+        "name":{
+            "cz": "Počítač",
+            "en": "Computer",
+            "de": "Computer"
+        },
+        "url": "Computer.csv"
+    }
+]
