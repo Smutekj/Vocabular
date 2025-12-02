@@ -1,0 +1,47 @@
+Type,cz,de,en
+Noun,Klávesnice,die Tastatur,keyboard
+Noun,Myš,die Maus,mouse
+Noun,Monitor,der Bildschirm,screen
+Noun,Počítač,der Computer,computer
+Noun,Počítat,rechnen,compute
+Noun,Notebook,das Notebook,notebook
+Noun,Složka,der Ordner,folder
+Noun,Soubor,die Datei,file
+Noun,Data,die Daten,data
+Noun,Applikace,die Applikation,application
+Noun,Odkaz,der Link,link
+Noun,Prohlížeč,der Browser,browser
+Noun,Program,das Programm,programm
+Noun,Tabulka,die Tafel,table
+Noun,Proměnná,die Variable,variable
+verb,Sestavit,aufstellen,build
+Noun,Třída,die Klasse,class
+Noun,Šablona,das Muster,template
+Noun,Zdroj,die Quelle,source
+Noun,Kód,der Kode,code
+Noun,Opakování,die Wiederholung,repetition
+Noun,Paměť,das Speicher,memory
+Noun,Reproduktor,der Lautsprecher,speaker
+Noun,Mikrofon,das Mikrofon,microphone
+Noun,Sluchátka,der Kopfhörer,headphones
+Noun,Chyba,der Fehler,error
+Noun,Podložka,die Unterlage,mouse pad
+Noun,Záložka,das Lesenzeichen,bookmark
+Noun,Rozšíření,die Erweiterung,extension
+verb,Kopírovat,kopieren,copy
+verb,Uložit,speichern,save
+verb,Vložit,einfügen,paste
+verb,Smazat,löschen,erase
+verb,Odstranit,entfernen;beseitigen,delete
+verb,Nahradit,ersetzen,replace
+verb,Opravit,reparieren,repair
+verb,Najít,finden,find
+verb,Vyhledat,suchen,search
+verb,Zálohovat,sichern,backup
+Noun,Přístroj,das Gerät,device
+Noun,Okno,das Fenster,window
+Noun,Vlastnost,die Eigenschaft,property
+Noun,Nastavení,die Einstellung,settings
+Adjvective,Základní,voreingestellt,default
+Adjvective,Chybějící,fehlend,missing
+Adjvective,Chybný,fehlerhaft,faulty

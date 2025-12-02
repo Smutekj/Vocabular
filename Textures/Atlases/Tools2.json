@@ -1,74 +1,24 @@
 {
   "frames": [
     {
-      "filename": "brush",
+      "filename": "chain",
       "frame": {
-        "x": 1,
-        "y": 1,
-        "w": 400,
-        "h": 148
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 400,
-        "h": 148
-      },
-      "sourceSize": {
-        "w": 400,
-        "h": 148
-      },
-      "pivot": {
         "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "file",
-      "frame": {
-        "x": 1,
-        "y": 151,
-        "w": 400,
-        "h": 136
+        "y": 0.5,
+        "w": 200,
+        "h": 200
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 400,
-        "h": 136
+        "w": 200,
+        "h": 200
       },
       "sourceSize": {
-        "w": 400,
-        "h": 136
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "flashlight",
-      "frame": {
-        "x": 1,
-        "y": 289,
-        "w": 400,
-        "h": 202
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 400,
-        "h": 202
-      },
-      "sourceSize": {
-        "w": 400,
-        "h": 202
+        "w": 200,
+        "h": 200
       },
       "pivot": {
         "x": 0.5,
@@ -78,172 +28,22 @@
     {
       "filename": "needle",
       "frame": {
-        "x": 403,
-        "y": 1,
-        "w": 395,
-        "h": 400
+        "x": 201.5,
+        "y": 0.5,
+        "w": 197.5,
+        "h": 200
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 395,
-        "h": 400
-      },
-      "sourceSize": {
-        "w": 395,
-        "h": 400
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "saw",
-      "frame": {
-        "x": 1,
-        "y": 493,
-        "w": 373,
-        "h": 400
-      },
-      "rotated": true,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 373,
-        "h": 400
-      },
-      "sourceSize": {
-        "w": 373,
-        "h": 400
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "scissors",
-      "frame": {
-        "x": 403,
-        "y": 403,
-        "w": 400,
-        "h": 200
-      },
-      "rotated": true,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 400,
+        "w": 197.5,
         "h": 200
       },
       "sourceSize": {
-        "w": 400,
+        "w": 197.5,
         "h": 200
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "spoon",
-      "frame": {
-        "x": 605,
-        "y": 403,
-        "w": 400,
-        "h": 78
-      },
-      "rotated": true,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 400,
-        "h": 78
-      },
-      "sourceSize": {
-        "w": 400,
-        "h": 78
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "stepladder",
-      "frame": {
-        "x": 800,
-        "y": 1,
-        "w": 173,
-        "h": 400
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 173,
-        "h": 400
-      },
-      "sourceSize": {
-        "w": 173,
-        "h": 400
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "knife",
-      "frame": {
-        "x": 685,
-        "y": 403,
-        "w": 382,
-        "h": 250
-      },
-      "rotated": true,
-      "trimmed": true,
-      "spriteSourceSize": {
-        "x": 10,
-        "y": 35,
-        "w": 382,
-        "h": 250
-      },
-      "sourceSize": {
-        "w": 400,
-        "h": 320
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "broom",
-      "frame": {
-        "x": 1,
-        "y": 868,
-        "w": 314,
-        "h": 376
-      },
-      "rotated": true,
-      "trimmed": true,
-      "spriteSourceSize": {
-        "x": 12,
-        "y": 12,
-        "w": 314,
-        "h": 376
-      },
-      "sourceSize": {
-        "w": 338,
-        "h": 400
       },
       "pivot": {
         "x": 0.5,
@@ -253,22 +53,22 @@
     {
       "filename": "bucket",
       "frame": {
-        "x": 403,
-        "y": 805,
-        "w": 360,
-        "h": 376
+        "x": 0.5,
+        "y": 201.5,
+        "w": 192,
+        "h": 200
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 12,
-        "y": 12,
-        "w": 360,
-        "h": 376
+        "x": 0,
+        "y": 0,
+        "w": 192,
+        "h": 200
       },
       "sourceSize": {
-        "w": 384,
-        "h": 400
+        "w": 192,
+        "h": 200
       },
       "pivot": {
         "x": 0.5,
@@ -276,24 +76,24 @@
       }
     },
     {
-      "filename": "chain",
+      "filename": "saw",
       "frame": {
-        "x": 1,
-        "y": 1184,
-        "w": 370,
-        "h": 325
+        "x": 193.5,
+        "y": 201.5,
+        "w": 186.5,
+        "h": 200
       },
       "rotated": false,
-      "trimmed": true,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 7,
-        "y": 42,
-        "w": 370,
-        "h": 325
+        "x": 0,
+        "y": 0,
+        "w": 186.5,
+        "h": 200
       },
       "sourceSize": {
-        "w": 400,
-        "h": 400
+        "w": 186.5,
+        "h": 200
       },
       "pivot": {
         "x": 0.5,
@@ -301,24 +101,124 @@
       }
     },
     {
-      "filename": "axe",
+      "filename": "comb",
       "frame": {
-        "x": 765,
-        "y": 787,
-        "w": 360,
-        "h": 142
+        "x": 381,
+        "y": 201.5,
+        "w": 200,
+        "h": 182.5
       },
-      "rotated": true,
-      "trimmed": true,
+      "rotated": false,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 21,
-        "y": 15,
-        "w": 360,
-        "h": 142
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 182.5
       },
       "sourceSize": {
-        "w": 400,
-        "h": 178
+        "w": 200,
+        "h": 182.5
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "broom",
+      "frame": {
+        "x": 400,
+        "y": 0.5,
+        "w": 169,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 169,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 169,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "knife",
+      "frame": {
+        "x": 381,
+        "y": 385,
+        "w": 200,
+        "h": 160
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 160
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "flashlight",
+      "frame": {
+        "x": 0.5,
+        "y": 402.5,
+        "w": 200,
+        "h": 101
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 101
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 101
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "scissors",
+      "frame": {
+        "x": 0.5,
+        "y": 504.5,
+        "w": 200,
+        "h": 100
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 100
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 100
       },
       "pivot": {
         "x": 0.5,
@@ -328,22 +228,22 @@
     {
       "filename": "sponge",
       "frame": {
-        "x": 765,
-        "y": 1149,
-        "w": 341,
-        "h": 185
+        "x": 201.5,
+        "y": 546,
+        "w": 200,
+        "h": 99
       },
-      "rotated": true,
-      "trimmed": true,
+      "rotated": false,
+      "trimmed": false,
       "spriteSourceSize": {
-        "x": 29,
-        "y": 6,
-        "w": 341,
-        "h": 185
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 99
       },
       "sourceSize": {
-        "w": 400,
-        "h": 198
+        "w": 200,
+        "h": 99
       },
       "pivot": {
         "x": 0.5,
@@ -353,22 +253,147 @@
     {
       "filename": "shovel",
       "frame": {
-        "x": 373,
-        "y": 1184,
-        "w": 265,
-        "h": 284
+        "x": 201.5,
+        "y": 402.5,
+        "w": 132.5,
+        "h": 142
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 265,
-        "h": 284
+        "w": 132.5,
+        "h": 142
       },
       "sourceSize": {
-        "w": 265,
-        "h": 284
+        "w": 132.5,
+        "h": 142
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "axe",
+      "frame": {
+        "x": 570,
+        "y": 0.5,
+        "w": 200,
+        "h": 89
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 89
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 89
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "stepladder",
+      "frame": {
+        "x": 582,
+        "y": 90.5,
+        "w": 86.5,
+        "h": 200
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 86.5,
+        "h": 200
+      },
+      "sourceSize": {
+        "w": 86.5,
+        "h": 200
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "brush",
+      "frame": {
+        "x": 402.5,
+        "y": 546,
+        "w": 200,
+        "h": 74
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 74
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 74
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "file",
+      "frame": {
+        "x": 582,
+        "y": 291.5,
+        "w": 200,
+        "h": 68
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 68
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 68
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "spoon",
+      "frame": {
+        "x": 0.5,
+        "y": 605.5,
+        "w": 200,
+        "h": 39
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 39
+      },
+      "sourceSize": {
+        "w": 200,
+        "h": 39
       },
       "pivot": {
         "x": 0.5,
@@ -382,9 +407,9 @@
     "image": "Tools2.png",
     "format": "RGBA8888",
     "size": {
-      "w": 974,
-      "h": 1510
+      "w": 783,
+      "h": 646
     },
-    "scale": 1
+    "scale": 0.5
   }
 }

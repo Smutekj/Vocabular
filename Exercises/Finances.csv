@@ -1,0 +1,42 @@
+Type,cz,de,en
+Noun,Peníze,das Geld,money
+Noun,Hotovost,das Bargeld,cash
+Noun,karta,die Karte,card
+Noun,Banka,die Bank,bank
+Noun,Účet,das Konto,account
+Noun,Půjčka,die Anleihe,loan
+verb,propůjčit,leihen,lend
+verb,půjčit v bance,verleihen,grant a loan
+Noun,Dluh,die Schuld,debt
+Noun,Dlužit,schulden,owe
+Noun,Úrok,der Zins,interest
+Noun,Pojišťovna,Versicherungsgesellschaft,insurance company
+Noun,Pojišťení,die Versicherung,insurance
+Noun,Investice,die Investition,investment
+Noun,Akcie,die Aktie,stock
+Noun,Burza,die Börse,stock exchange
+Noun,Cena,der Preis,price
+Noun,Sleva,der Rabatt,discount
+Noun,Vklad,die Einlage,deposit
+verb,Vložit,einlegen,deposit
+verb,Vybrat,abheben,withdraw
+verb,Výběr,die Abhebung,withdrawal
+Noun,Bankéř,der Bankier,banker
+Noun,Ztráty,der Verlust,losses
+Noun,Mzda,der Lohn,wage
+Noun,Plat,das Gehalt,wage
+Noun,Příjem,das Einkommen,income
+Noun,Výdaje,die Ausgabe,expenses
+Adjective,Drahý,teuer,expensive
+Adjective,Levný,billig,cheap
+Noun,Platba,die Zahlung,payment
+verb,Založit účet,Konto eröffnen,open an account
+Noun,Ekonomika,die Wirtschaft,economy
+Noun,Rozpočet,das Budget,budget
+Noun,Bankomat,der Bankautomat,ATM
+Noun,Poplatek,die Gebühr,fee
+Noun,Riziko,das Risiko,risk
+Noun,Daň,die Steuer,tax
+Noun,Spořící účet,das Sparkonto,savings account
+verb,spořit,sparen,save
+Noun,Smlouva,der Vertrag,contract

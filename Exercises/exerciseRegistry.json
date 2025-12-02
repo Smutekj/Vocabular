@@ -46,5 +46,21 @@
             "de": "Werkzeug"
         },
         "url": "Werkzeug.csv"
+    },
+    {
+        "name":{
+            "cz": "Finance",
+            "en": "Finances",
+            "de": "Finanzen"
+        },
+        "url": "Finances.csv"
+    },
+    {
+        "name":{
+            "cz": "Počítač",
+            "en": "Computer",
+            "de": "Computer"
+        },
+        "url": "Computer.csv"
     }
 ]
