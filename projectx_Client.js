@@ -11404,7 +11404,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  1098033: $0 => {
+  1098170: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -11412,7 +11412,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  1098258: () => {
+  1098395: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -11420,7 +11420,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  1098405: () => {
+  1098542: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -11428,7 +11428,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  1098639: $0 => {
+  1098776: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -11452,11 +11452,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  1099191: () => {
+  1099328: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  1099259: ($0, $1, $2, $3) => {
+  1099396: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11498,7 +11498,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  1100952: ($0, $1, $2, $3) => {
+  1101089: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11530,7 +11530,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  1102127: ($0, $1) => {
+  1102264: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11549,7 +11549,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  1102732: ($0, $1) => {
+  1102869: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11563,7 +11563,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  1103221: $0 => {
+  1103358: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11597,7 +11597,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  1104227: ($0, $1, $2) => {
+  1104364: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11668,7 +11668,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  1105695: ($0, $1, $2, $3, $4) => {
+  1105832: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11705,18 +11705,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  1106683: $0 => {
+  1106820: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  1106766: () => {
+  1106903: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  1106835: () => window.innerWidth,
-  1106865: () => window.innerHeight
+  1106972: () => window.innerWidth,
+  1107002: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11744,8 +11744,13 @@ function getWindowHeightImpl() {
   return window.screen.availHeight;
 }
 
-function pauseGameImpl(state) {
-  return Module.pauseGame(state);
+function pauseGameImpl(stateName) {
+  var stateNameVar = UTF8ToString(stateName);
+  Module.pauseGame(stateNameVar);
+}
+
+function startExamImpl(question_count) {
+  Module.startExam(question_count);
 }
 
 function loadFromStorageImpl(key) {
@@ -12515,6 +12520,7 @@ var wasmImports = {
   /** @export */ playBuffer2,
   /** @export */ setAssetsLoaded,
   /** @export */ setupDeviceOrientationImpl,
+  /** @export */ startExamImpl,
   /** @export */ updateLoadingProgress
 };
 
