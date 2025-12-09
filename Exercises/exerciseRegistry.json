@@ -5,7 +5,7 @@
             "en": "Adjectives",
             "de": "Adjektive"
         },
-        "url": "Adjectives.csv"
+        "url": "Adjectives"
     }, 
     {
         "name":{
@@ -13,7 +13,7 @@
             "en": "Fruits And Vegetables",
             "de": "Obst und Gemüse"
         },
-        "url": "FruitsAndVegetables.csv"
+        "url": "FruitsAndVegetables"
     },
     {
         "name":{
@@ -21,7 +21,7 @@
             "en": "Human Body 1",
             "de": "der Körper 1"
         },
-        "url": "HumanBody1.csv"
+        "url": "HumanBody1"
     },
     {
         "name":{
@@ -29,7 +29,7 @@
             "en": "Human Body 2",
             "de": "der Körper 2"
         },
-        "url": "HumanBody2.csv"
+        "url": "HumanBody2"
     },
     {
         "name":{
@@ -37,7 +37,7 @@
             "en": "Clothing",
             "de": "Kleidung"
         },
-        "url": "Kleidung.csv"
+        "url": "Kleidung"
     },
     {
         "name":{
@@ -45,7 +45,7 @@
             "en": "Hand Tools",
             "de": "Werkzeug"
         },
-        "url": "Werkzeug.csv"
+        "url": "Werkzeug"
     },
     {
         "name":{
@@ -53,7 +53,7 @@
             "en": "Finances",
             "de": "Finanzen"
         },
-        "url": "Finances.csv"
+        "url": "Finances"
     },
     {
         "name":{
@@ -61,6 +61,6 @@
             "en": "Computer",
             "de": "Computer"
         },
-        "url": "Computer.csv"
+        "url": "Computer"
     }
 ]
