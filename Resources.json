@@ -1,151 +1,158 @@
 {
   "Texture": {
+    "Planet-9": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Planets/planet-9.png"
+    },
+    "Meteor": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Meteor.png"
+    },
+    "SnakeHead": {
+      "options": {"wrap_x": 1, "wrap_y": 1},
+      "path": "Textures/SnakeHead.png"
+    },
+    "SnakeLink": {
+      "options": {"wrap_x": 1, "wrap_y": 1},
+      "path": "Textures/SnakeLink.png"
+    },
+    "Flag_de": {
+      "options": {"wrap_x": 1, "wrap_y": 1},
+      "path": "Textures/Flags/Flag_de.png"
+    },
+    "Flag_en": {
+      "options": {"wrap_x": 1, "wrap_y": 1},
+      "path": "Textures/Flags/Flag_en.png"
+    },
+    "Flag_cz": {
+      "options": {"wrap_x": 1, "wrap_y": 1},
+      "path": "Textures/Flags/Flag_cz.png"
+    },
     "Arrow": {
-      "id": "Arrow",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Arrow.png"
     },
     "BrickWall": {
-      "id": "BrickWall",
-      "options": {"wrap_x": 10497, "wrap_y": 10497},
+      "options": {"wrap_x": 0, "wrap_y": 0},
       "path": "Textures/BrickWall.png"
     },
     "Coin": {
-      "id": "Coin",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Coin.png"
     },
     "EnemyShip": {
-      "id": "EnemyShip",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/EnemyShip.png"
     },
     "FireNoise": {
-      "id": "FireNoise",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/FireNoise.png"
     },
     "Kleidung": {
-      "id": "Kleidung",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Kleidung.png"
     },
     "MetalBox1": {
-      "id": "MetalBox1",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/MetalBox1.png"
     },
     "Noise": {
-      "id": "Noise",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Noise.png"
     },
     "PlayerShip": {
-      "id": "PlayerShip",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/PlayerShip.png"
     },
-    "SkyNight1": {
-      "id": "SkyNight1",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
-      "path": "Textures/SkyNight1.png"
-    },
-    "SkyNight2": {
-      "id": "SkyNight2",
-      "options": {"wrap_x": 10497, "wrap_y": 33071},
-      "path": "Textures/SkyNight2.png"
-    },
-    "SkySunset1": {
-      "id": "SkySunset1",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
-      "path": "Textures/SkySunset1.png"
-    },
-    "SkySunset2": {
-      "id": "SkySunset2",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
-      "path": "Textures/SkySunset2.png"
-    },
     "Star": {
-      "id": "Star",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Star.png"
     },
     "Station": {
-      "id": "Station",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Station.png"
     },
     "StoneWall": {
-      "id": "StoneWall",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/StoneWall.png"
     },
     "TNT": {
-      "id": "TNT",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/TNT.png"
     },
     "Turrets": {
-      "id": "Turrets",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Turrets.png"
     },
     "UIBack": {
-      "id": "UIBack",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIBack.png"
     },
     "UIClose": {
-      "id": "UIClose",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIClose.png"
     },
     "UIDot": {
-      "id": "UIDot",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIDot.png"
     },
     "UIForward": {
-      "id": "UIForward",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIForward.png"
     },
     "UIHeaderFrame": {
-      "id": "UIHeaderFrame",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIHeaderFrame.png"
     },
     "UIMenu": {
-      "id": "UIMenu",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIMenu.png"
     },
     "UIOk": {
-      "id": "UIOk",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIOk.png"
     },
     "UIShopFrame": {
-      "id": "UIShopFrame",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/UIShopFrame.png"
     },
     "Werkzeug": {
-      "id": "Werkzeug",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
+      "options": {"wrap_x": 1, "wrap_y": 1},
       "path": "Textures/Werkzeug.png"
     },
-    "background": {
-      "id": "background",
-      "options": {"wrap_x": 33071, "wrap_y": 33071},
-      "path": "Textures/background.png"
+    "Space": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Backgrounds/Space.png"
+    },
+    "PaperVintage": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Backgrounds/PaperVintage.jpg"
+    },
+    "SkyNight1": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Backgrounds/SkyNight1.png"
+    },
+    "SkyNight2": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Backgrounds/SkyNight2.png"
+    },
+    "SkySunset1": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Backgrounds/SkySunset1.png"
+    },
+    "SkySunset2": {
+      "options": {"wrap_x": 0, "wrap_y": 0},
+      "path": "Textures/Backgrounds/SkySunset2.png"
     }
   },
   "Font":
   {
+    "TahomaSmall":{
+        "size": 12,
+        "path":"Fonts/Tahoma.ttf" 
+    },
     "Tahoma":{
-        "id": "Tahoma",
-        "size": 20,
+        "size": 22,
         "path":"Fonts/Tahoma.ttf" 
     }    
   },
@@ -203,13 +210,41 @@
   },
   "Atlas":
   {
+    "Kitchen":{
+        "path": "Textures/Atlases/Kitchen.png",
+        "json_path": "Textures/Atlases/Kitchen.json"
+    },
     "Kleidung":{
         "path": "Textures/Atlases/Kleidung.png",
         "json_path": "Textures/Atlases/Kleidung.json"
     },
+    "FruitsAndVegetables":{
+        "path": "Textures/Atlases/FruitsAndVegetables.png",
+        "json_path": "Textures/Atlases/FruitsAndVegetables.json"
+    },
     "Werkzeug":{
         "path": "Textures/Atlases/Werkzeug.png",
         "json_path": "Textures/Atlases/Werkzeug.json"
+    },
+    "Tools2":{
+        "path": "Textures/Atlases/Tools2.png",
+        "json_path": "Textures/Atlases/Tools2.json"
+    },
+    "HumanBody_0":{
+        "path": "Textures/Atlases/HumanBody_0.png",
+        "json_path": "Textures/Atlases/HumanBody_0.json"
+    },
+    "HumanBody_1":{
+        "path": "Textures/Atlases/HumanBody_1.png",
+        "json_path": "Textures/Atlases/HumanBody_1.json"
+    },
+    "BlueExplosion":{
+        "path": "Textures/Animations/BlueExplosion.png",
+        "json_path": "Textures/Animations/BlueExplosion.json"
+    },
+    "PurpleExplosion":{
+        "path": "Textures/Animations/PurpleExplosion.png",
+        "json_path": "Textures/Animations/PurpleExplosion.json"
     }
   }
 }

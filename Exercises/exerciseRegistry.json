@@ -1,6 +1,14 @@
 [
     {
         "name":{
+            "cz": "V kuchyni",
+            "en": "Kitchen",
+            "de": "Küche"
+        },
+        "url": "Kitchen"
+    },
+    {
+        "name":{
             "cz": "Přídavná Jména",
             "en": "Adjectives",
             "de": "Adjektive"
