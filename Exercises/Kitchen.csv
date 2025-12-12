@@ -28,11 +28,11 @@ Noun,mrazák,der Gefrierschrank,freezer
 Noun,síto,das Sieb,sieve
 Noun,naběračka,die Schöpfkelle,ladle
 Noun,nádobí,das Geschirr,utensil
-Noun,Cedník,der Durchschlag,colander
+Noun,cedník,der Durchschlag,colander
 Noun,třecí miska,der Mörtel,mortar
 Noun,tlouček,der Stößel,pestle
 Noun,kleště,die Zange,tongs
-Noun,krájet,schneiden,to cut
+Verb,krájet,schneiden,to cut
 Verb,smíchat,mischen,to mix
 Verb,servírovat,servieren,to serve
 Noun,konvice,der Wasserkocher,kettle
@@ -40,7 +40,7 @@ Noun,špacthle,der Spachtel,spatula
 Noun,struhadlo,die Reibe,grater
 Noun,kuchyňské rukavice,die Backofenhandschuhe,oven mitts
 Noun,váha,die Waage,scale
-Verb,škrábat,die Schale,to peel
+Verb,loupat,schälen,to peel
 Noun,škrabka,der Schäler,peeler
 Noun,odměrka,der Messbecher,measuring cup
 Verb,rozmačkat,stampfen,to mash
