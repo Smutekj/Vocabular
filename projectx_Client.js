@@ -4102,67 +4102,6 @@ function ___syscall_fstat64(fd, buf) {
   }
 }
 
-var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
-  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
-  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
-};
-
-function ___syscall_getdents64(fd, dirp, count) {
-  try {
-    var stream = SYSCALLS.getStreamFromFD(fd);
-    stream.getdents ||= FS.readdir(stream.path);
-    var struct_size = 280;
-    var pos = 0;
-    var off = FS.llseek(stream, 0, 1);
-    var startIdx = Math.floor(off / struct_size);
-    var endIdx = Math.min(stream.getdents.length, startIdx + Math.floor(count / struct_size));
-    for (var idx = startIdx; idx < endIdx; idx++) {
-      var id;
-      var type;
-      var name = stream.getdents[idx];
-      if (name === ".") {
-        id = stream.node.id;
-        type = 4;
-      } else if (name === "..") {
-        var lookup = FS.lookupPath(stream.path, {
-          parent: true
-        });
-        id = lookup.node.id;
-        type = 4;
-      } else {
-        var child;
-        try {
-          child = FS.lookupNode(stream.node, name);
-        } catch (e) {
-          // If the entry is not a directory, file, or symlink, nodefs
-          // lookupNode will raise EINVAL. Skip these and continue.
-          if (e?.errno === 28) {
-            continue;
-          }
-          throw e;
-        }
-        id = child.id;
-        type = FS.isChrdev(child.mode) ? 2 : // DT_CHR, character device.
-        FS.isDir(child.mode) ? 4 : // DT_DIR, directory.
-        FS.isLink(child.mode) ? 10 : // DT_LNK, symbolic link.
-        8;
-      }
-      assert(id);
-      HEAP64[((dirp + pos) >> 3)] = BigInt(id);
-      HEAP64[(((dirp + pos) + (8)) >> 3)] = BigInt((idx + 1) * struct_size);
-      HEAP16[(((dirp + pos) + (16)) >> 1)] = 280;
-      HEAP8[(dirp + pos) + (18)] = type;
-      stringToUTF8(name, dirp + pos + 19, 256);
-      pos += struct_size;
-    }
-    FS.llseek(stream, idx * struct_size, 0);
-    return pos;
-  } catch (e) {
-    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
-    return -e.errno;
-  }
-}
-
 function ___syscall_ioctl(fd, op, varargs) {
   SYSCALLS.varargs = varargs;
   try {
@@ -4389,6 +4328,11 @@ function __munmap_js(addr, len, prot, flags, fd, offset) {
     return -e.errno;
   }
 }
+
+var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
+  assert(typeof maxBytesToWrite == "number", "stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!");
+  return stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+};
 
 var __tzset_js = (timezone, daylight, std_name, dst_name) => {
   // TODO: Use (malleable) environment variables instead of system settings.
@@ -11116,7 +11060,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  1106730: $0 => {
+  1063354: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -11124,7 +11068,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  1106955: () => {
+  1063579: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -11132,7 +11076,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  1107102: () => {
+  1063726: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -11140,7 +11084,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  1107336: $0 => {
+  1063960: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -11164,11 +11108,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  1107888: () => {
+  1064512: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  1107956: ($0, $1, $2, $3) => {
+  1064580: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11210,7 +11154,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  1109649: ($0, $1, $2, $3) => {
+  1066273: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11242,7 +11186,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  1110824: ($0, $1) => {
+  1067448: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11261,7 +11205,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  1111429: ($0, $1) => {
+  1068053: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11275,7 +11219,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  1111918: $0 => {
+  1068542: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11309,7 +11253,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  1112924: ($0, $1, $2) => {
+  1069548: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11380,7 +11324,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  1114392: ($0, $1, $2, $3, $4) => {
+  1071016: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11417,18 +11361,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  1115380: $0 => {
+  1072004: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  1115463: () => {
+  1072087: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  1115532: () => window.innerWidth,
-  1115562: () => window.innerHeight
+  1072156: () => window.innerWidth,
+  1072186: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11590,7 +11534,6 @@ var wasmImports = {
   /** @export */ __resumeException: ___resumeException,
   /** @export */ __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */ __syscall_fstat64: ___syscall_fstat64,
-  /** @export */ __syscall_getdents64: ___syscall_getdents64,
   /** @export */ __syscall_ioctl: ___syscall_ioctl,
   /** @export */ __syscall_lstat64: ___syscall_lstat64,
   /** @export */ __syscall_newfstatat: ___syscall_newfstatat,
@@ -11962,19 +11905,14 @@ var wasmImports = {
   /** @export */ glBindFramebuffer: _glBindFramebuffer,
   /** @export */ glBindTexture: _glBindTexture,
   /** @export */ glBindVertexArray: _glBindVertexArray,
-  /** @export */ glBindVertexArrayOES: _glBindVertexArrayOES,
-  /** @export */ glBlendEquation: _glBlendEquation,
-  /** @export */ glBlendEquationSeparate: _glBlendEquationSeparate,
   /** @export */ glBlendFunc: _glBlendFunc,
   /** @export */ glBlendFuncSeparate: _glBlendFuncSeparate,
-  /** @export */ glBlitFramebuffer: _glBlitFramebuffer,
   /** @export */ glBufferData: _glBufferData,
   /** @export */ glBufferSubData: _glBufferSubData,
   /** @export */ glCheckFramebufferStatus: _glCheckFramebufferStatus,
   /** @export */ glClear: _glClear,
   /** @export */ glClearColor: _glClearColor,
   /** @export */ glCompileShader: _glCompileShader,
-  /** @export */ glCopyTexImage2D: _glCopyTexImage2D,
   /** @export */ glCreateProgram: _glCreateProgram,
   /** @export */ glCreateShader: _glCreateShader,
   /** @export */ glDeleteBuffers: _glDeleteBuffers,
@@ -11983,9 +11921,6 @@ var wasmImports = {
   /** @export */ glDeleteShader: _glDeleteShader,
   /** @export */ glDeleteTextures: _glDeleteTextures,
   /** @export */ glDeleteVertexArrays: _glDeleteVertexArrays,
-  /** @export */ glDeleteVertexArraysOES: _glDeleteVertexArraysOES,
-  /** @export */ glDetachShader: _glDetachShader,
-  /** @export */ glDisable: _glDisable,
   /** @export */ glDisableVertexAttribArray: _glDisableVertexAttribArray,
   /** @export */ glDrawArraysInstanced: _glDrawArraysInstanced,
   /** @export */ glDrawElements: _glDrawElements,
@@ -11997,9 +11932,7 @@ var wasmImports = {
   /** @export */ glGenFramebuffers: _glGenFramebuffers,
   /** @export */ glGenTextures: _glGenTextures,
   /** @export */ glGenVertexArrays: _glGenVertexArrays,
-  /** @export */ glGenVertexArraysOES: _glGenVertexArraysOES,
   /** @export */ glGenerateMipmap: _glGenerateMipmap,
-  /** @export */ glGetAttribLocation: _glGetAttribLocation,
   /** @export */ glGetIntegerv: _glGetIntegerv,
   /** @export */ glGetProgramInfoLog: _glGetProgramInfoLog,
   /** @export */ glGetProgramiv: _glGetProgramiv,
@@ -12007,11 +11940,8 @@ var wasmImports = {
   /** @export */ glGetShaderiv: _glGetShaderiv,
   /** @export */ glGetString: _glGetString,
   /** @export */ glGetUniformLocation: _glGetUniformLocation,
-  /** @export */ glIsEnabled: _glIsEnabled,
-  /** @export */ glIsProgram: _glIsProgram,
   /** @export */ glLinkProgram: _glLinkProgram,
   /** @export */ glPixelStorei: _glPixelStorei,
-  /** @export */ glScissor: _glScissor,
   /** @export */ glShaderSource: _glShaderSource,
   /** @export */ glTexImage2D: _glTexImage2D,
   /** @export */ glTexParameteri: _glTexParameteri,
@@ -12048,7 +11978,6 @@ var wasmImports = {
   /** @export */ invoke_vii,
   /** @export */ invoke_viii,
   /** @export */ invoke_viiii,
-  /** @export */ invoke_viiiii,
   /** @export */ invoke_viiiiiii,
   /** @export */ invoke_viiiiiiiiii,
   /** @export */ invoke_viiiiiiiiiiiiiii,
@@ -12182,17 +12111,6 @@ function invoke_iiiiii(index, a1, a2, a3, a4, a5) {
   var sp = stackSave();
   try {
     return getWasmTableEntry(index)(a1, a2, a3, a4, a5);
-  } catch (e) {
-    stackRestore(sp);
-    if (!(e instanceof EmscriptenEH)) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiiii(index, a1, a2, a3, a4, a5) {
-  var sp = stackSave();
-  try {
-    getWasmTableEntry(index)(a1, a2, a3, a4, a5);
   } catch (e) {
     stackRestore(sp);
     if (!(e instanceof EmscriptenEH)) throw e;
