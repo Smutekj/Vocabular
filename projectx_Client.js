@@ -11060,7 +11060,7 @@ function checkIncomingModuleAPI() {
 }
 
 var ASM_CONSTS = {
-  1063354: $0 => {
+  1065226: $0 => {
     var str = UTF8ToString($0) + "\n\n" + "Abort/Retry/Ignore/AlwaysIgnore? [ariA] :";
     var reply = window.prompt(str, "i");
     if (reply === null) {
@@ -11068,7 +11068,7 @@ var ASM_CONSTS = {
     }
     return allocate(intArrayFromString(reply), "i8", ALLOC_NORMAL);
   },
-  1063579: () => {
+  1065451: () => {
     if (typeof (AudioContext) !== "undefined") {
       return true;
     } else if (typeof (webkitAudioContext) !== "undefined") {
@@ -11076,7 +11076,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  1063726: () => {
+  1065598: () => {
     if ((typeof (navigator.mediaDevices) !== "undefined") && (typeof (navigator.mediaDevices.getUserMedia) !== "undefined")) {
       return true;
     } else if (typeof (navigator.webkitGetUserMedia) !== "undefined") {
@@ -11084,7 +11084,7 @@ var ASM_CONSTS = {
     }
     return false;
   },
-  1063960: $0 => {
+  1065832: $0 => {
     if (typeof (Module["SDL2"]) === "undefined") {
       Module["SDL2"] = {};
     }
@@ -11108,11 +11108,11 @@ var ASM_CONSTS = {
     }
     return SDL2.audioContext === undefined ? -1 : 0;
   },
-  1064512: () => {
+  1066384: () => {
     var SDL2 = Module["SDL2"];
     return SDL2.audioContext.sampleRate;
   },
-  1064580: ($0, $1, $2, $3) => {
+  1066452: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     var have_microphone = function(stream) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11154,7 +11154,7 @@ var ASM_CONSTS = {
       }, have_microphone, no_microphone);
     }
   },
-  1066273: ($0, $1, $2, $3) => {
+  1068145: ($0, $1, $2, $3) => {
     var SDL2 = Module["SDL2"];
     SDL2.audio.scriptProcessorNode = SDL2.audioContext["createScriptProcessor"]($1, 0, $0);
     SDL2.audio.scriptProcessorNode["onaudioprocess"] = function(e) {
@@ -11186,7 +11186,7 @@ var ASM_CONSTS = {
       SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1e3);
     }
   },
-  1067448: ($0, $1) => {
+  1069320: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels;
     for (var c = 0; c < numChannels; ++c) {
@@ -11205,7 +11205,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  1068053: ($0, $1) => {
+  1069925: ($0, $1) => {
     var SDL2 = Module["SDL2"];
     var buf = $0 >>> 2;
     var numChannels = SDL2.audio.currentOutputBuffer["numberOfChannels"];
@@ -11219,7 +11219,7 @@ var ASM_CONSTS = {
       }
     }
   },
-  1068542: $0 => {
+  1070414: $0 => {
     var SDL2 = Module["SDL2"];
     if ($0) {
       if (SDL2.capture.silenceTimer !== undefined) {
@@ -11253,7 +11253,7 @@ var ASM_CONSTS = {
       SDL2.audioContext = undefined;
     }
   },
-  1069548: ($0, $1, $2) => {
+  1071420: ($0, $1, $2) => {
     var w = $0;
     var h = $1;
     var pixels = $2;
@@ -11324,7 +11324,7 @@ var ASM_CONSTS = {
     }
     SDL2.ctx.putImageData(SDL2.image, 0, 0);
   },
-  1071016: ($0, $1, $2, $3, $4) => {
+  1072888: ($0, $1, $2, $3, $4) => {
     var w = $0;
     var h = $1;
     var hot_x = $2;
@@ -11361,18 +11361,18 @@ var ASM_CONSTS = {
     stringToUTF8(url, urlBuf, url.length + 1);
     return urlBuf;
   },
-  1072004: $0 => {
+  1073876: $0 => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = UTF8ToString($0);
     }
   },
-  1072087: () => {
+  1073959: () => {
     if (Module["canvas"]) {
       Module["canvas"].style["cursor"] = "none";
     }
   },
-  1072156: () => window.innerWidth,
-  1072186: () => window.innerHeight
+  1074028: () => window.innerWidth,
+  1074058: () => window.innerHeight
 };
 
 function setAssetsLoaded() {
@@ -11454,9 +11454,9 @@ var _free = makeInvalidEarlyAccess("_free");
 
 var _malloc = makeInvalidEarlyAccess("_malloc");
 
-var _fflush = makeInvalidEarlyAccess("_fflush");
-
 var _strerror = makeInvalidEarlyAccess("_strerror");
+
+var _fflush = makeInvalidEarlyAccess("_fflush");
 
 var _emscripten_stack_get_end = makeInvalidEarlyAccess("_emscripten_stack_get_end");
 
@@ -11502,8 +11502,8 @@ function assignWasmExports(wasmExports) {
   Module["_receiveMessage"] = _receiveMessage = createExportWrapper("receiveMessage", 1);
   _free = createExportWrapper("free", 1);
   _malloc = createExportWrapper("malloc", 1);
-  _fflush = createExportWrapper("fflush", 1);
   _strerror = createExportWrapper("strerror", 1);
+  _fflush = createExportWrapper("fflush", 1);
   _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
   _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
   _emscripten_builtin_memalign = createExportWrapper("emscripten_builtin_memalign", 2);
@@ -11921,10 +11921,8 @@ var wasmImports = {
   /** @export */ glDeleteShader: _glDeleteShader,
   /** @export */ glDeleteTextures: _glDeleteTextures,
   /** @export */ glDeleteVertexArrays: _glDeleteVertexArrays,
-  /** @export */ glDisableVertexAttribArray: _glDisableVertexAttribArray,
+  /** @export */ glDrawArrays: _glDrawArrays,
   /** @export */ glDrawArraysInstanced: _glDrawArraysInstanced,
-  /** @export */ glDrawElements: _glDrawElements,
-  /** @export */ glDrawElementsInstanced: _glDrawElementsInstanced,
   /** @export */ glEnable: _glEnable,
   /** @export */ glEnableVertexAttribArray: _glEnableVertexAttribArray,
   /** @export */ glFramebufferTexture2D: _glFramebufferTexture2D,
@@ -11942,6 +11940,7 @@ var wasmImports = {
   /** @export */ glGetUniformLocation: _glGetUniformLocation,
   /** @export */ glLinkProgram: _glLinkProgram,
   /** @export */ glPixelStorei: _glPixelStorei,
+  /** @export */ glReadPixels: _glReadPixels,
   /** @export */ glShaderSource: _glShaderSource,
   /** @export */ glTexImage2D: _glTexImage2D,
   /** @export */ glTexParameteri: _glTexParameteri,
