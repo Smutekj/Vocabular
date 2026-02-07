@@ -1,0 +1,55 @@
+Type,cz,de,en
+Noun,dům,das Haus,house
+Noun,byt,die Wohnung,apartment
+Noun,vchod,der Eingang,entrance
+Noun,okno,das Fenster,window
+Noun,dveře,die Tür,door
+Noun,střecha,das Dach,roof
+Noun,zahrada,der Garten,garden
+Noun,balkón,der Balkon,balcony
+Noun,podkroví,das Dachgeschoss,attic
+Noun,suterén,keller,basement
+Noun,garáž,die Garage,garage
+Noun,chodba,der Flur,hallway
+Noun,obývací pokoj,wohnzimmer,living room
+Noun,kuchyň,die Küche,kitchen
+Noun,ložnice,das Schlafzimmer,bedroom
+Noun,koupelna,das Badezimmer,bathroom
+Noun,toaleta,die Toilette,toilet
+Noun,šatna,die Garderobe,wardrobe
+Noun,prádelna,die Waschküche,laundry room
+Noun,terasa,die Terrasse,terrace
+Noun,plot,der Zaun,fence
+Noun,trávník,das Gras,lawn
+Noun,koš,der Mülleimer,trash bin
+Noun,světlo,die Lampe,light
+Noun,lampa,die Lampe,lamp
+Noun,stůl,der Tisch,table
+Noun,židle,der Stuhl,chair
+Noun,pohovka,das Sofa,sofa
+Noun,postel,das Bett,bed
+Noun,schody,die Treppe,stairs
+Noun,krb,der Kamin,fireplace
+Noun,rádio,das Radio,radio
+Noun,televize,die Fernseher,TV
+Verb,uklízet,aufräumen,to clean
+Verb,mýt,waschen,to wash
+Verb,vysávat,staubsaugen,to vacuum
+Verb,utírat,abwischen,to wipe
+Verb,umývat mýdlem,seifen,to soap
+Verb,natírat strechu,dach streichen,to paint the roof
+Verb,sekávat trávník,rasen mähen,to mow the lawn
+Verb,zalévat květiny,blumen gießen,to water flowers
+Verb,otevírat die Tür,die Tür öffnen,to open the door
+Verb,zavírat die Tür,die Tür schließen,to close the door
+Verb,otevřít okno,das Fenster öffnen,to open the window
+Verb,zavřít okno,das Fenster schließen,to close the window
+Adjective,čistý,sauber,clean
+Adjective,špinavý,schmutzig,dirty
+Adjective,útulný,gemütlich,cozy
+Adjective,tmavý,dunkel,dark
+Adjective,světlý,hell,bright
+Adjective,prostorný,geräumig,spacious
+Adjective,nepořádný,unordentlich,messy
+Adjective,tichý,leise,quiet
+Adjective,hlasitý,laut,loud

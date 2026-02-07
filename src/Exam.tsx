@@ -3,14 +3,12 @@ import './style/App.css'
 import type { ExerciseLine, AnswerStatus } from './Exercise.tsx';
 import LineExercise from './Exercise.tsx';
 import { type WordGroup } from './Game.tsx';
-import { type GameState } from './Game.tsx';
+import { GameState, type GameStateT } from './Game.tsx';
 import { permute } from './utils/randomUtils.ts'
 
 export type ExerciseProps = {
-  excercises: Array<ExerciseLine>;
-  words_score: Map<string, number>;
-  setWordsScore: (value: Map<string, number>) => void;
-  // swapActivity: (target_activity: ActivityType) => void;
+  exercises: Array<ExerciseLine>;
+  setExercises: (exers: Array<ExerciseLine>) => void;
 }
 
 
@@ -19,34 +17,33 @@ function addScore(correct_score: number, word: string, scores: Map<string, numbe
 };
 
 
-function FinalExam({ excercises, words_score, setWordsScore }: ExerciseProps) {
+function FinalExam({ exercises, setExercises }: ExerciseProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [correctStates, setCorrectStates] = useState<AnswerStatus[]>(
-    Array(excercises.length).fill("UNCHECKED"));
+    Array(exercises.length).fill("UNCHECKED"));
   const [shuffledLines, setShuffledLines] = useState<ExerciseLine[]>([]);
 
   useEffect(() => {
-    permute(excercises);
-    setShuffledLines(excercises);
-  }, [excercises]);
+    permute(exercises);
+    setShuffledLines(exercises);
+  }, [exercises]);
 
   const handleReadAllInputs = () => {
     if (containerRef.current) {
       const inputs = containerRef.current.querySelectorAll<HTMLInputElement>("input");
       const values = Array.from(inputs).map((i) => i.value);
       const new_states = Array<AnswerStatus>(correctStates.length);
-      const new_scores = words_score;
       values.forEach((value, index) => {
         const exc_index = (index);
         const correct_word = shuffledLines[exc_index].correct_word;
         const is_correct = value === correct_word;
         new_states[index] = is_correct ? "CORRECT" : "INCORRECT";
-        addScore(is_correct ? 1 : 0, correct_word, new_scores);
+        shuffledLines[exc_index].score += (is_correct ?  1: 0);
       });
       setCorrectStates(new_states);
-      setWordsScore(new_scores);
+      setExercises(shuffledLines);
     }
   };
   const resetAllInputs = () => {
@@ -107,7 +104,7 @@ type LoaderProps = {
 function deserializeGroup(group_name: string, group_json: any) {
   const exercises = (group_json[group_name] as ExerciseLine[]);
   const group: WordGroup = {
-    excercises: exercises,
+    exercises: exercises,
     group_id: 0,
     group_name: group_name,
     words_score: new Map<string, number>(),
@@ -136,13 +133,13 @@ async function loadExercisesFromDb(topics: string[], questions_count: number)
 
     const exercises : ExerciseLine[] = [];
     groups.forEach((group, topic) =>{
-      exercises.push(...group.excercises);
+      exercises.push(...group.exercises);
     });
 
     return exercises;
 }
 type PracticeExamProps = {
-  setGameState: (state: GameState)=>void 
+  setGameState: (state: GameStateT)=>void 
   questions_count: number
 };
 //! this is run when playing a game to train active memory
@@ -159,6 +156,7 @@ export function PracticeExam({ setGameState, questions_count }: PracticeExamProp
     const topics = localStorage.getItem("topics")?.split(',');
     if (!topics) { return; }
 
+    console.log("QC FROM COMP: ", questions_count)
     loadExercisesFromDb(topics, questions_count).then((exercises) => {
       permute(exercises);
       setShuffledLines(exercises.splice(0, questions_count));

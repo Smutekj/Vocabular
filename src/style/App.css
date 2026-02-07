@@ -21,17 +21,6 @@
   /* optional max width */
 }
 
-.summaryTableHeader {
-  border: 1px solid #ccc;
-  padding: 4px;
-  text-align: center
-}
-
-.summaryTableRow {
-  border: 1px solid #ccc;
-  padding: 4px;
-}
-
 
 .navigationContainer {
   display: flex;

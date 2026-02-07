@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 
+import { AppState, type AppStateT } from './shared.ts';
 import {getNativeLang, type Language} from './LanguageProvider.tsx'
 
 type TopicSelectionProps = {
     // topic_groups: Map<string, WordGroup>;
     selected_topics: string[]
     setSelectedTopics: (topics: string[]) => void;
-    setAppState: (state: number) => void;
+    setAppState: (state: AppStateT) => void;
 };
 
 
@@ -25,7 +26,6 @@ async function loadExerciseRegistry() {
     await fetch("/Vocabular/Exercises/exerciseRegistry.json").then(response => { return response.json() })
         .then(json => {
             exec_metadata.entries = json as ExerciseRegistryEntry[];
-
         }).catch((err) => {
             console.log("Failed to fetch exerciseRegistry.json: ", err);
         });
@@ -54,17 +54,18 @@ function TopicSelection({ selected_topics, setSelectedTopics, setAppState }: Top
 
     const onSelection = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, topic: string) => {
         let new_selection: string[] = [];
+        const cleanTopic = topic.replace(/\.[^/.]+$/, "")
         if (!(e.shiftKey || e.ctrlKey)) {
-            new_selection.push(topic);
+            new_selection.push(cleanTopic);
         } else {
-            if (selected_topics.includes(topic)) {
-                new_selection = selected_topics.filter(t => t !== topic);
+            if (selected_topics.includes(cleanTopic)) {
+                new_selection = selected_topics.filter(t => t !== cleanTopic);
             } else {
-                new_selection = [...selected_topics, topic];
+                new_selection = [...selected_topics, cleanTopic];
             }
         }
-        setSelectedTopics(new_selection);
         localStorage.setItem("topics", new_selection.toString());
+        setSelectedTopics(new_selection);
     };
 
     return (

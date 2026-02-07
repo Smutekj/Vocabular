@@ -1,16 +1,19 @@
 
 import useLanguage, { type Language } from "./LanguageProvider";
+import  {AppState, type AppStateT} from "./shared.ts";
 
 const availableLanguages = ["en", "de", "cz"];
 type LanguageSelectorProps = {
-    setAppState: (state: number) => void;
+    setAppState: (state: AppStateT) => void;
 };
 export function LanguageSelector({ setAppState }: LanguageSelectorProps) {
     const { nativeLanguage, studiedLanguage, setNativeLanguage, setStudiedLanguage } = useLanguage();
+    
+    
     return (
         <>
             <div className="navigationContainer">
-                <button onClick={() => { setAppState(0) }}>Back</button>
+                <button onClick={() => { setAppState(AppState.Practice) }}>Back</button>
             </div>
             <div className="flex items-center justify-center h-full w-full">
                 <div className="flex flex-col space-y-4 p-4 border rounded bg-gray-800 text-white w-64">

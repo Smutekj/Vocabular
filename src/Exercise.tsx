@@ -1,10 +1,13 @@
 import './style/Exercise.css'
+import { type TextureLocation } from './exerciseLoader';
 
 export type ExerciseLine = {
+    type: string;
     meaning_id: string;
     correct_word: string;
     translation: string;
     image_src: string | null;
+    // image_id: TextureLocation |null;
     score: number;
 };
 

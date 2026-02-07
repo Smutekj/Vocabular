@@ -1,25 +1,28 @@
-import { useRef, useEffect, useState, act } from 'react'
+import { useEffect, useState } from 'react'
 import './style/Game.css'
 import { type ExerciseLine } from './Exercise.js';
 import { PracticeExam } from './Exam.tsx'
 import LoadingScreen from './LoadingScreen.tsx';
 import { MainMenu, GameSelection, PauseState, Settings } from './MainMenu.tsx';
+import  Lobby  from './Lobby.tsx';
+import type { AppStateT } from './shared.ts';
 
-const GameState = {
+export const GameState = {
     LoadingAssets: "LOADING" as const,
     Running: "RUNNING" as const,
+    Lobby: "LOBBY" as const,
     Paused: "PAUSED" as const,
     Exam: "EXAM" as const,
     Menu: "MENU" as const,
     Settings: "SETTINGS" as const,
     NewGame: "NEWGAME" as const,
 };
-export type GameState = typeof GameState[keyof typeof GameState];
+export type GameStateT = typeof GameState[keyof typeof GameState];
 
 export type WordGroup = {
     group_name: string;
     group_id: number;
-    excercises: Array<ExerciseLine>;
+    exercises: Array<ExerciseLine>;
     words_score: Map<string, number>;
     progress: number;
 };
@@ -47,7 +50,7 @@ async function uploadExercisesToDb(topics: Array<string>) {
 }
 
 type GameProps = {
-    setAppState: (state: number) => void;
+    setAppState: (state: AppStateT) => void;
     visible: boolean;
     selectedTopics: string[];
     Module: any;
@@ -90,7 +93,8 @@ function applyCanvasSize(Module: any, canvas: HTMLCanvasElement, width: number, 
 function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
 
     const [gameStarted, setGameStarted] = useState<boolean>(false);
-    const [gameState, setGameState] = useState<GameState>(GameState.LoadingAssets);
+    const [gameState, setGameState] = useState<GameStateT>(GameState.LoadingAssets);
+    const [questionCount, setQuestionCount] = useState<number>(3);
 
     //! set canvas size when it changes to visible
     useEffect(() => {
@@ -119,7 +123,6 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
         const canvas = (document.getElementById("canvas") as HTMLCanvasElement);
         if (visible && canvas) {
             // canvas.scrollIntoView({ behavior: "instant" })
-            // canvas.focus();
             document.addEventListener("touchstart", () => {
                 if (!Module.sfxCtx) {
                     Module.sfxCtx = new AudioContext({
@@ -131,6 +134,8 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
             }, { once: true });
 
             if (!gameStarted) {// If first time running the game, we have to load assets and call main
+               
+
                 if (canvas) {
                     setGameStarted(true);
                     // screen.orientation.("landscape");
@@ -161,7 +166,7 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
             } else { //! otherwise just make it visible by resizing canvas
                 console.log("changed canvas from browser to:\nw: " + canvas.width + " h " + canvas.height)
                 Module._setCanvasSize?.(canvas.clientWidth, canvas.clientHeight);
-                
+
                 // Module.requestFullscreen(false, false);
                 Module._emscripten_resume_main_loop?.();
             }
@@ -180,7 +185,6 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
         const container = document.getElementById("canvasContainer");
         if (!canvas) return;
 
-        // canvasEl?.focus();
         if (!gameStarted) {
 
             const events = ['keydown', 'keypress', 'keyup'];
@@ -200,23 +204,24 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
 
             //! allows us to change state from withing c++ app
             Module.setAppState = (state: number) => {
-                setAppState(state);
+                var appstate : AppStateT;
+                setAppState((state as AppStateT));
             };
 
             Module.setAssetsLoaded = () => {
                 setGameState("MENU");
                 setGameStarted(true);
             }; //! this will be called by game to know when it can start
-
-            Module.pauseGame = (state: number) => {
+;
+            Module.pauseGame = (state: GameStateT) => {
 
                 requestAnimationFrame(() => {
                     if (!document.fullscreenElement) {
-                        setGameState("EXAM");
+                        setGameState(state);
                     } else {
                         document.exitFullscreen();
                         requestAnimationFrame(() => {
-                            setGameState("EXAM");
+                            setGameState(state);
                         })
                     }
                     requestAnimationFrame(() => {
@@ -225,23 +230,30 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
                     });
                 });
             };
+            Module.startExam = (question_count : number ) => {
+
+                console.log(question_count);
+                setQuestionCount(question_count);
+                requestAnimationFrame(() => {
+                    if (!document.fullscreenElement) {
+                        setGameState(GameState.Exam);
+                    } else {
+                        document.exitFullscreen();
+                        requestAnimationFrame(() => {
+                            setGameState(GameState.Exam);
+                        })
+                    }
+                    requestAnimationFrame(() => {
+                        console.log("PAUSING MAIN LOOP");
+                        console.log("QUESTION COUNT: ", questionCount);
+                        Module._emscripten_pause_main_loop();
+                    });
+                });
+            };
         }
 
         return () => { };
     }, []);
-
-    function onGameRestart() {
-        const Module = (window as any).Module;
-        Module?._restartGame();
-    }
-    function onFullScreenToggle() {
-        const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-        if (!canvas) return;
-        // Module?._toggleFullscreen();
-        ensureCanvasHasSize(Module, canvas);
-        Module?.requestFullscreen(false, true);
-        console.log("TOGGLING FULLSCREEN!");
-    }
 
     useEffect(() => {
         window.history.pushState(gameState, "", "");
@@ -268,6 +280,7 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
         if (!canvas) { return; }
 
         if (gameState === GameState.Running) {
+            canvas.focus();
             canvas.style.position = '';
             canvas.style.left = '';
         }
@@ -281,18 +294,16 @@ function Game({ setAppState, visible, selectedTopics, Module }: GameProps) {
     return (
 
         <div style={{ display: visible ? "block" : "none" }}>
-            {/* {<div style={{ "display": "flex", "flexDirection": "row", "justifyContent": "center" }}> */}
-                {/* <div className="textButton" id="fullscreenButton" onClick={onFullScreenToggle}>Fullscreen</div> */}
-            {/* </div>} */}
 
             {gameState === GameState.Menu &&
                 <MainMenu setAppState={setAppState} setGameState={setGameState} Module={Module} />}
 
+            {gameState === GameState.Lobby && <Lobby setAppState={setAppState} setGameState={setGameState} Module={Module} />}
             {gameState === GameState.LoadingAssets && <LoadingScreen Module={Module} />}
             {gameState === GameState.NewGame && <GameSelection setGameState={setGameState} Module={Module} />}
             {gameState === GameState.Paused && <PauseState setGameState={setGameState} />}
             {gameState === GameState.Settings && <Settings setGameState={setGameState} entryState={"MENU"} Module={Module} />}
-            {gameState === GameState.Exam && <PracticeExam setGameState={setGameState} questions_count={1} />}
+            {gameState === GameState.Exam && <PracticeExam setGameState={setGameState} questions_count={questionCount}  />}
 
             <div id="canvasContainer" style={{ width: "100%", height: "100%" }}></div>
         </div >

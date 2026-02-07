@@ -1,10 +1,11 @@
 import { useRef, useEffect, useState, type JSX, type ChangeEvent, type ChangeEventHandler } from 'react'
 import './style/App.css'
-import type { GameState } from './Game';
+import { GameState, type GameStateT } from './Game';
+import type { AppStateT } from './shared';
 
 
 type GameSelectionProps = {
-    setGameState: (state: GameState) => void;
+    setGameState: (state: GameStateT) => void;
     Module: any;
 };
 
@@ -21,7 +22,7 @@ export function GameSelection({ setGameState, Module }: GameSelectionProps) {
         Module._startGame(id);
     };
 
-    const gameNames: Array<string> = new Array<string>("Dodge", "Jump", "Castle", "Snake");
+    const gameNames: Array<string> = new Array<string>("Snake", "Jump", "Castle Crawl" );
 
     return (
         <div className="flex flex-col items-center justify-center h-[90vh] space-y-6">
@@ -43,7 +44,7 @@ export function GameSelection({ setGameState, Module }: GameSelectionProps) {
 }
 
 type PauseState = {
-    setGameState: (state: GameState) => void;
+    setGameState: (state: GameStateT) => void;
 };
 
 export function PauseState({ setGameState }: PauseState) {
@@ -105,9 +106,9 @@ function VolumeSlider({ volume, setVolume }: VolumeSliderProps) {
 }
 
 type SettingsProps = {
-    setGameState: (state: GameState) => void;
+    setGameState: (state: GameStateT) => void;
     Module: any;
-    entryState: GameState;
+    entryState: GameStateT;
 };
 
 export function Settings({ setGameState, entryState, Module }: SettingsProps) {
@@ -136,8 +137,8 @@ export function Settings({ setGameState, entryState, Module }: SettingsProps) {
 
 
 type MainMenuProps = {
-    setAppState: (state: number) => void;
-    setGameState: (state: GameState) => void;
+    setAppState: (state: AppStateT) => void;
+    setGameState: (state: GameStateT) => void;
     Module: any;
 };
 export function MainMenu({ setAppState, setGameState, Module }: MainMenuProps) {
@@ -148,11 +149,14 @@ export function MainMenu({ setAppState, setGameState, Module }: MainMenuProps) {
 
     const mainMenuTexts: Array<string> = new Array<string>("Play Game", "Settings", "Back");
     const mainMenuActions = (buttonId: string) => {
+        if (buttonId === 'MultiPlayer') {
+            setGameState(GameState.Lobby);
+        }
         if (buttonId === 'Play Game') {
-            setGameState("NEWGAME");
+            setGameState(GameState.NewGame);
         }
         else if (buttonId === 'Settings') {
-            setGameState("SETTINGS");
+            setGameState(GameState.Settings);
         }
         else if (buttonId === 'Back') {
             setAppState(0);

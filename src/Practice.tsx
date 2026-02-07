@@ -12,11 +12,11 @@ function addScore(correct_score: number, word: string, scores: Map<string, numbe
     scores?.has(word) ? scores.set(word, + correct_score) : scores.set(word, correct_score);
 };
 
-function SmallExercise({ excercises, words_score, setWordsScore, inputChecked, exc_selection }: SmallExerciseProps) {
+function SmallExercise({ exercises, inputChecked, exc_selection }: SmallExerciseProps) {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [correctStates, setCorrectStates] = useState<AnswerStatus[]>(
-        Array(excercises.length).fill("UNCHECKED"));
+        Array(exercises.length).fill("UNCHECKED"));
 
     //! check input and update AnswerStates when parent wants to
     useEffect(() => {
@@ -26,15 +26,13 @@ function SmallExercise({ excercises, words_score, setWordsScore, inputChecked, e
         const inputs = containerRef.current.querySelectorAll<HTMLInputElement>("input");
         if (inputChecked) {
             const values = Array.from(inputs).map((i) => i.value);
-            const new_scores = words_score;
             values.forEach((value, index) => {
-                const correct_word = excercises[exc_selection[index]].correct_word;
+                const correct_word = exercises[exc_selection[index]].correct_word;
                 const is_correct = value === correct_word;
                 new_states[index] = is_correct ? "CORRECT" : "INCORRECT";
-                excercises[exc_selection[index]].score += (2 * Number(is_correct) - 1);
-                addScore(is_correct ? 1 : 0, correct_word, new_scores);
+                exercises[exc_selection[index]].score += (2 * Number(is_correct) - 1);
             });
-            setWordsScore(new_scores);
+            
         } else {
             inputs.forEach((input, index) => inputs[index].value = "");
             new_states.fill("UNCHECKED");
@@ -53,7 +51,7 @@ function SmallExercise({ excercises, words_score, setWordsScore, inputChecked, e
                 {
                     exc_selection.map((exc_id, index) => (
                         <LineExercise key={index}
-                            line_text={excercises[exc_id]}
+                            line_text={exercises[exc_id]}
                             status={correctStates[index]}
                             style={{ flex: "1 1 200px", alignItems: "center", minWidth: "200px", maxWidth: "100%" }}
                             focused={index === 0}
@@ -97,65 +95,63 @@ function randomWeightedIndex(weights: Array<number>) {
 };
 
 function selectRandomWord(
-    excercises: Array<ExerciseLine>,
+    exercises: Array<ExerciseLine>,
     first: number,
     excercise_weights: Array<number>) {
-    return excercises[first + randomWeightedIndex(excercise_weights)];
+    return exercises[first + randomWeightedIndex(excercise_weights)];
 }
 
 function generateExercise(
-    excercises: Array<ExerciseLine>,
-    words_score: Map<string, number>,
+    exercises: Array<ExerciseLine>,
     first: number = 0,
-    selection_count: number = excercises.length,
+    selection_count: number = exercises.length,
     generate_count: number = 3
 ): Array<ExerciseLine> {
 
-    const excercise_weights = excercises.slice(first, first + selection_count).map((exc) => {
-        const score = (words_score.get(exc.correct_word) ?? 0);
-        return Math.max(1, 5 - score);
+    const excercise_weights = exercises.slice(first, first + selection_count).map((exc) => {
+        return Math.max(1, 5 - exc.score);
     });
 
-    const new_excercises = new Array<ExerciseLine>();
-    if (excercises.length < generate_count) {
-        return excercises;
+    const new_exercises = new Array<ExerciseLine>();
+    if (exercises.length < generate_count) {
+        return exercises;
     }
     for (let i = 0; i < generate_count; i++) {
-        let new_exc = selectRandomWord(excercises, first, excercise_weights);
-        while (new_excercises.includes(new_exc)) {
-            new_exc = selectRandomWord(excercises, first, excercise_weights);
+        let new_exc = selectRandomWord(exercises, first, excercise_weights);
+        while (new_exercises.includes(new_exc)) {
+            new_exc = selectRandomWord(exercises, first, excercise_weights);
         }
-        new_excercises.push(new_exc);
+        new_exercises.push(new_exc);
     }
 
-    return new_excercises;
+    return new_exercises;
 }
 
 
 function generateExerciseIds(
-    excercises: Array<ExerciseLine>,
+    exercises: Array<ExerciseLine>,
     first: number = 0,
-    selection_count: number = excercises.length,
+    selection_count: number = exercises.length,
     generate_count: number = 3
 ): Array<number> {
 
-    const excercise_weights = excercises.slice(first, first + selection_count).map((exc) => {
+    const excercise_weights = exercises.slice(first, first + selection_count).map((exc) => {
         return Math.max(1, 5 - exc.score);
     });
 
-    const new_excercises = new Array<number>();
-    if (excercises.length < generate_count) {
+    const new_exercises = new Array<number>();
+    if (exercises.length < generate_count) {
         return [];
     }
 
     for (let i = 0; i < generate_count; i++) {
         let new_exc = first + randomWeightedIndex(excercise_weights);
-        while (new_excercises.includes(new_exc)) {
+        while (new_exercises.includes(new_exc)) {
             new_exc = first + randomWeightedIndex(excercise_weights);
         }
-        new_excercises.push(new_exc);
+        new_exercises.push(new_exc);
     }
-    return new_excercises;
+    return new_exercises;
 }
 
 
@@ -185,8 +181,8 @@ class ContinualGenerator implements GeneratorI {
         return generated_exs;
     }
 
-    constructor(excercises: Array<ExerciseLine>, progress: number = 0, batch_size: number = 6) {
-        this.excercise_pool = excercises;
+    constructor(exercises: Array<ExerciseLine>, progress: number = 0, batch_size: number = 6) {
+        this.excercise_pool = exercises;
         this.progress = progress;
         this.batch_size = batch_size;
         this.training_new_batch = true;
@@ -201,42 +197,42 @@ const SmallExerciseState = {
 };
 type SmallExerciseState = typeof SmallExerciseState[keyof typeof SmallExerciseState]
 
-export default function Exercise2({ excercises, words_score, setWordsScore }: ExerciseProps) {
+export default function Exercise2({ exercises, setExercises}: ExerciseProps) {
 
     const [shuffledLines, setShuffledLines] = useState<ExerciseLine[]>([]);
     const [progress, setProgress] = useState<number>(5);
     const [inputChecked, setInputChecked] = useState<boolean>(false);
     const [excerciseState, setExerciseState] = useState<SmallExerciseState>("Practicing");
     const [generatedExercises, setGeneratedExercises] = useState<Array<ExerciseLine>>(
-        excercises.length > 3 ? generateExercise(excercises, words_score, 0, progress) : []
+        exercises.length > 3 ? generateExercise(exercises,  0, progress) : []
     );
     const [selection, setSelection] = useState<Array<number>>(
-        generateExerciseIds(excercises, 0, progress)
+        generateExerciseIds(exercises, 0, progress)
     );
 
     useEffect(() => {
-        setGeneratedExercises(generateExercise(excercises, words_score, 0, progress));
-        setShuffledLines(excercises);
-    }, [excercises]);
+        setGeneratedExercises(generateExercise(exercises, 0, progress));
+        setShuffledLines(exercises);
+    }, [exercises]);
 
     function changeCard(count: number) {
         const cards_count = shuffledLines.length;
-        const next_progress = Math.min(progress + 5, excercises.length);
+        const next_progress = Math.min(progress + 5, exercises.length);
         if (excerciseState === "NewSet") {
-            // setGeneratedExercises(generateExercise(excercises, words_score, progress, 5));
-            setSelection(generateExerciseIds(excercises, progress, 5));
+            // setGeneratedExercises(generateExercise(exercises, words_score, progress, 5));
+            setSelection(generateExerciseIds(exercises, progress, 5));
         } else {
-            setSelection(generateExerciseIds(excercises, 0, progress));
+            setSelection(generateExerciseIds(exercises, 0, progress));
         }
     };
 
 
     function onCheck() { //! decide whether the user knows the NewSet well enough
-        const next_progress = Math.min(progress + 5, excercises.length);
+        const next_progress = Math.min(progress + 5, exercises.length);
         var all_scores_good: boolean = true;
         if (excerciseState === "NewSet") {
             for (var i = progress; i < next_progress; i++) {
-                all_scores_good = all_scores_good && (words_score.get(excercises[i].correct_word) ?? 0) >= 2;
+                all_scores_good = all_scores_good && exercises[i].score >= 2;
             }
             if (all_scores_good) {
                 setProgress(next_progress);
@@ -244,7 +240,7 @@ export default function Exercise2({ excercises, words_score, setWordsScore }: Ex
             }
         } else if (excerciseState === "Practicing") {
             for (var i = 0; i < progress; i++) {
-                all_scores_good = all_scores_good && (words_score.get(excercises[i].correct_word) ?? 0) >= 1;
+                all_scores_good = all_scores_good && exercises[i].score >= 1;
             }
             if (all_scores_good) {
                 setExerciseState("NewSet");
@@ -254,11 +250,10 @@ export default function Exercise2({ excercises, words_score, setWordsScore }: Ex
 
     return (
         <div>
-            {excercises.length > 1 &&
+            {exercises.length > 1 &&
                 <SmallExercise
-                    excercises={excercises}
-                    words_score={words_score}
-                    setWordsScore={setWordsScore}
+                    exercises={exercises}
+                    setExercises={setExercises}
                     inputChecked={inputChecked}
                     exc_selection={selection}
                 ></SmallExercise>

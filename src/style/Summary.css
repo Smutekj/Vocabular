@@ -1,0 +1,23 @@
+.summaryTableHeader {
+  border: 1px solid #ccc;
+  padding: 4px;
+  text-align: center
+}
+
+.summaryTableRow {
+  border: 1px solid #ccc;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+
+.wordSelectionTableRow:hover  .summaryTableRow {
+  background-color: gray;
+  cursor: pointer;
+}
+
+
+.summaryTableRowSelected {
+  border: 1px solid #ccc;
+  color: green;
+  padding: 4px;
+}

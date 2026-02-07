@@ -22,8 +22,10 @@
     "@fortawesome/react-fontawesome": "^3.0.2",
     "@tailwindcss/vite": "^4.1.16",
     "idb": "^8.0.3",
+    "motion": "^12.23.25",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.10.1",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
